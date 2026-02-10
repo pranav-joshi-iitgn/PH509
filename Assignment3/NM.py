@@ -247,96 +247,144 @@ def LF_step(q,p,a,dt,i,**kwargs):
     p[i+1] = p[i] + a(q_mid,**kwargs)*dt
     q[i+1] = q_mid + p[i+1]*dt/2
 
-GM_s = 4*(np.pi**2) # the GM values for sun in AU^3 year^-2
+def LFTT_step(W,t,q,p,a,dt,i,**kwargs):
+    q_mid = q[i] + p[i]*(dt/2)/W[i]
+    t_mid = t[i] + (dt/2)/W[i]
+    q_mid_mag = np.linalg.norm(q_mid)
+    p[i+1] = p[i] + a(q_mid,**kwargs)*dt*q_mid_mag
+    W[i+1] = W[i] - np.dot(q_mid, ((p[i+1] + p[i])/2))*dt*(q_mid_mag**-2)
+    q[i+1] = q_mid + p[i+1]*(dt/2)/W[i+1]
+    t[i+1] = t_mid + (dt/2)/W[i+1]
 
-def gravity(r,GM=GM_s,delta=0,lamb=None):
-    if lamb is None: return - GM*r/(np.linalg.norm(r)**(3+delta))
+
+GM_s = 4*(np.pi**2) # the GM values for sun in AU^3 year^-2
+plt.rcParams['ytick.labelsize'] = 8
+
+
+def gravity(r,GM=GM_s,delta=0,lamb=0):
+    if lamb == 0: return - GM*r/(np.linalg.norm(r)**(3+delta))
     else: 
         r_mag = np.linalg.norm(r)
-        return -GM*r*(r_mag**-3 + lamb*r_mag**-5)
+        return -GM*r*(r_mag**-(3+delta) + lamb*r_mag**-(5+delta))
 
 def Orbit(
     GM=GM_s,
     r_init=np.array([1.017, 0.0]),
     v_init=np.array([0.0,6.179]),
-    dts = [0.001],
-    deltas =[0],
-    T_max = 20, # 5 years
+    methods = {"LF":0.001},
+    deltas =[0,0.01],
+    lambs = [0],
+    T_max = 50, # years
     a = gravity,
-    lamb = 0
+    vis=False
     ):
-    fig = plt.figure(figsize=(5,20))
-    AX = fig.subplots(13,1,sharex=True)
+    if vis:
+        fig = plt.figure(figsize=(10,20))
+        AX = fig.subplots(13,1,sharex=True)
+        fig2 = plt.figure()
+        AX2 = fig2.subplots(1,1)
+        colors = ["blue","red","green","black","purple","yellow","brown"][::-1]
+
     for delta in deltas:
-        for dt in dts:
-            t = np.arange(0,T_max+dt/2,dt)
-            r = np.zeros((t.shape[0],2))
-            v = np.zeros((t.shape[0],2))
-            r[0] = r_init
-            v[0] = v_init
-            for i in range(t.shape[0]-1):
-                LF_step(r,v,gravity,dt,i,lamb=lamb,delta=delta)
-            x = r[:,0]
-            y = r[:,1]
-            v_x = v[:,0]
-            v_y = v[:,1]
-            theta = np.arctan2(y,x)
-            r = (x**2 + y**2)**0.5
-            v = (v_x**2 + v_y**2)**0.5
-            E = 0.5*v**2 - GM /r
-            L = x*v_y - y*v_x
-            A_x,A_y = [L*v_y -GM*x/r,-L*v_x -GM*y/r]
-            A = (A_x**2 + A_y**2)**0.5
-            phi = np.arctan2(A_y,A_x)
-            phi = 2*np.pi*(phi < 0) + phi
-            v_r = (x*v_x + y*v_y)/r
-            v_theta = (-y*v_x + x*v_y)/r
-            omega = v_theta/r
-            a = ((2/r) - ((v**2)/GM))**-1
-            T = 2*np.pi*((a**3)/GM)**0.5 
-            M = int(round(T[0]/dt))
-            lap = np.floor(t/T).astype(int)
-            i_r =np.unique([M*n + np.argmin(r[M*n:M*(n+1)]) for n in range(lap.max())])
-            i_theta =np.unique([M*n + np.argmax(omega[M*n:M*(n+1)]) for n in range(lap.max())])
-            n_r = np.zeros_like(t,dtype=int)
-            for i in i_r :
-                n_r = n_r + (np.arange(t.shape[0]) >= i)
-            n_theta = np.zeros_like(t,dtype=int)
-            for i in i_theta :
-                n_theta = n_theta + (np.arange(t.shape[0]) >= i)
+        for method, dt in methods.items():
+            for lamb in lambs:
+                c = colors.pop()
+                t = np.arange(0,T_max+dt/2,dt)
+                r = np.zeros((t.shape[0],2))
+                v = np.zeros((t.shape[0],2))
+                r[0] = r_init
+                v[0] = v_init
+                if method=="LF":
+                    for i in range(t.shape[0]-1):
+                        LF_step(r,v,gravity,dt,i,lamb=lamb,delta=delta)
+                elif method=="LFTT":
+                    W = np.zeros_like(t)
+                    W[0] = 1/np.linalg.norm(r_init)
+                    for i in range(t.shape[0]-1):
+                        LFTT_step(W,t,r,v,gravity,dt,i,lamb=lamb,delta=delta)
+                else: raise ValueError(f"unknown method: {method}")
+                x = r[:,0]
+                y = r[:,1]
+                v_x = v[:,0]
+                v_y = v[:,1]
+                theta = np.arctan2(y,x)
+                theta = theta + 2*np.pi*(theta <  0)
+                r = (x**2 + y**2)**0.5
+                v = (v_x**2 + v_y**2)**0.5
+                E = 0.5*v**2 - GM/(r*(1+delta))
+                L = x*v_y - y*v_x
+                A_x,A_y = [L*v_y -GM*x/r,-L*v_x -GM*y/r]
+                A = (A_x**2 + A_y**2)**0.5
+                phi = np.arctan2(A_y,A_x)
+                phi = 2*np.pi*(phi < 0) + phi
+                v_r = (x*v_x + y*v_y)/r
+                v_theta = (-y*v_x + x*v_y)/r
+                omega = v_theta/r
+                a = ((2/r) - ((v**2)/GM))**-1
+                T = 2*np.pi*((a**3)/GM)**0.5 
+                r_prev = np.concatenate((r[:1],r[:1],r[:-2]))
+                r_next = np.concatenate((r[2:],r[-1:],r[-1:]))
+                i_r = np.flatnonzero((r < r_prev) & (r <= r_next))
+                theta_prev = np.concatenate((theta[:1],theta[:-1]))
+                theta_next = np.concatenate((theta[1:],theta[-1:]))
+                i_theta = np.flatnonzero((theta < theta_prev) & (theta <= theta_next))
+                n_r = np.zeros_like(t,dtype=int)
+                for i in i_r :
+                    n_r = n_r + (np.arange(t.shape[0]) >= i)
+                n_theta = np.zeros_like(t,dtype=int)
+                for i in i_theta :
+                    n_theta = n_theta + (np.arange(t.shape[0]) >= i)
+                if not vis:continue
+                cond = (
+                    f"({method}, " +
+                    r"$\delta={" + str(delta)+ 
+                    r"}$, $\Delta t=" + str(dt) + 
+                    r"$, $\lambda=" + str(lamb)+"$)")
+                AX[0].plot(t,v_x,label=cond,color=c) 
+                AX[1].plot(t,v_y,label=cond,color=c)
+                AX[2].plot(t,theta,label=cond,color=c)
+                AX[2].plot(t[i_theta],theta[i_theta],'o',label="minima " + cond,color=c)
+                AX[3].plot(t,r,label=cond,color=c)
+                AX[3].plot(t[i_r],r[i_r],'o',label="minima " + cond,color=c)
+                AX[4].plot(t,v,label=cond,color=c)
+                AX[5].plot(t,v_r,label=cond,color=c)
+                AX[6].plot(t,omega,label=cond,color=c)
+                AX[7].plot(t,n_r,label=cond,color=c)
+                AX[8].plot(t,n_theta,label=cond,color=c)
+                AX[9].plot(t,E,label=cond,color=c)
+                AX[10].plot(t,L,label=cond,color=c)
+                AX[11].plot(t,A,label=cond,color=c)
+                AX[12].plot(t,phi,label=cond,color=c)
 
-            cond = (
-                r"($\delta={" + str(delta)+ 
-                r"}$, $\Delta t=" + str(dt) + 
-                r"$, $\lambda" + str(lamb)+"$)")
-            AX[0].plot(t,v_x,label=cond) 
-            AX[1].plot(t,v_y,label=cond)
-            AX[2].plot(t,theta,label=cond)
-            AX[2].plot(t[i_theta],theta[i_theta],'o',label="maxima " + cond)
-            AX[3].plot(t,r,label=cond)
-            AX[3].plot(t[i_r],r[i_r],'o',label="minima " + cond)
-            AX[4].plot(t,v,label=cond)
-            AX[5].plot(t,v_r,label=cond)
-            AX[6].plot(t,omega,label=cond)
-            AX[7].plot(t,n_r,label=cond)
-            AX[8].plot(t,n_theta,label=cond)
-            AX[9].plot(t,E,label=cond)
-            AX[10].plot(t,L,label=cond)
-            AX[11].plot(t,A,label=cond)
-            AX[12].plot(t,phi,label=cond)
+                AX2.plot(x,y,label=cond,color=c)
+                AX2.plot(x[0],y[0],'o',label="initial position" + cond,color=c)
 
-    ylabels = ["v_x","v_y",r"\theta","r","v","v_r",r"\omega",r"n_r",r"n_\theta",r"E/m",r"L/m",r"A/m^2",r"\phi"]
+    if vis:
+        AX[2].set_ylim(0,2*np.pi)
+        AX[2].set_yticks([0,2*np.pi],[0,r"$2\pi$"])
+        AX[2].legend()
+        # AX[3].legend()
+        AX[7].legend()
+        AX[8].legend()
+        AX[12].set_ylim(0,2*np.pi)
+        AX[12].set_yticks([0,2*np.pi],[0,r"$2\pi$"])
+        ylabels = ["v_x","v_y",r"\theta","r","v","v_r",r"\omega",r"n_r",r"n_\theta",r"E/m",r"L/m",r"A/m^2",r"\phi"]
+        for ax,lbl in zip(AX,ylabels): 
+            ax.set_ylabel("$" + lbl + "$")
+            # ax.legend()
 
-    for ax,lbl in zip(AX,ylabels): 
-        ax.set_ylabel("$" + lbl + "$")
+        AX[12].set_xlabel("$t$ (years)")
+        AX[12].legend()
 
-    fig.axes[-1].set_xlabel("$t$ (years)")
+        AX2.set_xlabel("$x$ (AU)")
+        AX2.set_ylabel("$y$ (AU)")
+        AX2.plot([0],[0],'o',label="sun",color="yellow",markersize=10)
+        AX2.axhline(0)
+        AX2.axvline(0)
+        AX2.set_aspect('equal')
+        AX2.set_xlim(-0.1-np.linalg.norm(r_init),0.1+2*np.linalg.norm(r_init))
+        AX2.set_ylim(-0.1-np.linalg.norm(r_init),0.1+2*np.linalg.norm(r_init))
+        AX2.legend()
 
-            # AX[0].plot(x,y,label=cond)
-            # AX[0].plot(x[-1],y[-1],label=cond)
-
-
-            
-
-Orbit()
+Orbit(vis=True,T_max=10,deltas=[0],methods={"LF":0.01,"LFTT":0.01})
 plt.show()
