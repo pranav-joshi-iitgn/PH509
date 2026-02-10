@@ -344,3 +344,103 @@ $$
 $$
 
 Renaming $\Delta t = h$, we get the same equations as those given in part (b) of problem 3. 
+
+## (g) : Time step as a phase space coordinate transformation
+
+### Part 1
+
+The Euler method time step is the map $F_E : (\theta,\omega) \to (\Theta,\Omega) = (\theta + h \omega, \omega - h\sin\theta)$ .
+
+This gives us the partial derivatives 
+
+$$
+\frac{\partial \Theta}{\partial \theta} = 1 \\
+\frac{\partial \Theta}{\partial \omega} = h \\
+\frac{\partial \Omega}{\partial \theta} = -h\cos\theta \\
+\frac{\partial \Omega}{\partial \omega} = 1 \\
+$$
+
+Thus, we have the jacobian 
+
+$$
+J_E = \begin{bmatrix}
+1 & h \\
+-h\cos\theta & 1
+\end{bmatrix}
+$$
+
+This has the determinant
+
+$$
+\det J_E (\theta,\omega) = \begin{vmatrix}
+1 & h \\
+-h\cos\theta & 1
+\end{vmatrix} = 1\cdot1 - h\cdot (-h\cos\theta) = 1 - h^2\cos\theta
+$$
+
+This means that $\lnot (\det J_E (\theta,\omega) = 1 \forall \theta,\omega)$. 
+
+Since this transformation doesn't necessarily preserve the phase space area locally, we cannot say that it will preserve the are enclosed by the a constant energy trajectory in the phase space. 
+
+Now, since the energy of the oscilator is given by $H(\theta, \omega) = \frac{1}{2}\omega^2 + (1-\cos\theta)$, the energy of the transformed points will be :
+
+$$
+H(\Theta,\Omega) = \frac{1}{2}\Omega^2 + (1-\cos\Theta)
+$$
+
+Since it will be hard to evaluate this for large $h$, I am opting to compue the derivative with respect to $h$. If that turns out to be non-zero, we'll know that the transformation doesn't preserve energy. 
+
+$$
+\frac{d}{dh}H(\Theta,\Omega) = [\Omega(-\sin\theta) + \sin\Theta (\omega)] 
+$$
+
+Since clearly, evaluating it at $h=0$ gives us 0, it means that we need to go for the second order derivative. 
+
+Doing that gives us :
+
+$$
+\frac{d^2}{dh^2}H(\Theta,\Omega) = [(-\sin\theta)^2 + \cos\Theta (\omega)^2] 
+$$
+
+Now evaluating the second derivative at $h = 0$ doesn't give us 0 for all $\theta,\omega$ . What this means is that while the linear term in the taylor expansion of $H(\Theta(h),\Omega(h))$ is 0 and the constant term matches the current energy, since the quadratic term is not 0, thus for large enough $h$, this transformation will alter the energy. 
+
+### Part 2
+
+The Euler Cromer method has the transformation 
+
+$$
+\Theta = \theta + h\omega - h^2 \sin\theta \\
+\Omega = \omega - h\sin\theta \\ 
+$$
+
+This gives us the Jacobian 
+
+$$
+J_\text{EC}(\theta,\omega) = 
+\begin{bmatrix}
+1 - h^2\cos\theta &  h \\
+-h\cos\theta & 1
+\end{bmatrix}
+$$
+
+This has the determinant
+
+$$
+\det J_\text{EC} = 1 - h^2\cos\theta + h^2\cos\theta = 1\;\forall \theta,\omega
+$$
+
+Thus it preserves area in phase space. 
+
+### Part 3
+
+The determinant being 1 is the discrete analogue for the Lioville operator $D_H$ and the flow function $\Psi_t = \exp(t D_H)$. For the continous evolution, we had 
+
+$$
+\vec z(t) = \Psi_t (\vec z_0) = \exp(t D_H) \vec z_0
+$$
+
+The flow function had the area preserving property too. Namely, we had $[\Psi_t \vec z_1, \Psi_t \vec z_2] = [\vec z_1,\vec z_2] = (J\vec z_1)\cdot \vec z_2$ . 
+
+Now, rather than $\vec z(t) = \Psi_t \vec z(0)$, we have $\vec z_n = M^n \vec z_0$ where $M$ is the map that the update steps implement. When the algorithm is symplectic, these maps also preserve area. The maps preserving the area in phase space is equivalent to the jacobian of the transformation/map being 1 everywhere (for all $\vec z$).
+
+This also shows in the phase space trajectories of the numerical solutions given by Euler's method and Euler-Cromer (EC) method. The EC method, being symplectic, preserves the area enclosed, whereas with Euler's method the trajectory first starts getting farther from the origina and eventually deviates from what we expect. This is because the area (as we would get for the full, but transformed trajectory) keeps changing. 
