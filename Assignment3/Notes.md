@@ -294,6 +294,104 @@ $$
 
 Note the sign. It's away from the sun.
 
+### Relation of Rung-Lenz vector with $SO(4)$. 
+
+We already know that for any scalar quantity $f(\vec q, \vec p)$, we have :
+
+$$
+\frac{d}{dt}f = \{f,H\}
+$$
+
+This is Liouville's theorem. This then carries over easily to statistical mechaics, but for the probability density $\rho$.
+There's an analogous theorem in Quantum Statistical Mechanics for density matrices ($\hat \rho = \ket{\psi}\bra{\psi}$) which is very useful when you have mixed states. The analogous theorem I talked about is :
+
+$$
+i\hbar\frac{\partial}{\partial t}\hat\rho = [\hat H,\hat \rho] = \hat H \hat \rho - \hat \rho \hat H
+$$
+
+It seems all of physics is littered with commutator, for the uncertainity principle to classical mechanics. 
+
+Now, as with all quantities, the Rung-Lenz vector's components also follows Liouville's theorem, giving us:
+
+$$
+\frac{d}{dt} \vec A = \{\vec A,H\}
+$$
+
+Using the definition of $\vec A$, we can write :
+
+$$
+\{\vec A,H\} = \{\vec p \times \vec L , H\} - GMm\{\hat r, H\}
+$$
+
+But then using product rule for terms of form $p_iL_j$, we can easily get :
+
+$$
+\{\vec p \times \vec L , H\} = \{\vec p, H\} \times \vec L + \vec p \times \{\vec L, H\}
+\\ = (\frac{d}{dt}\vec p)\times \vec L + \vec p \times (\frac{d}{dt}\vec L)
+$$
+
+Now, since the force is radial, we have $\frac{d}{dt}\vec L = 0$. As for $\frac{d}{dt}\vec p$ , that's just the force , namely $\vec F = - \frac{GMm}{r^2}\hat r$ . So, this leaves us with :
+
+$$
+\{\vec p \times \vec L , H\} = -\frac{GMm}{r^2}\hat r \times \vec L
+$$
+
+But remember, $\vec L = \vec r \times \vec p$, allowing us to write :
+
+$$
+\{\vec p \times \vec L , H\} = \frac{GMm}{r}((\hat r\cdot \hat r)\vec p - (\hat r \cdot \vec p)\hat r) \\
+ = \frac{GM}{r}(\vec p - (\hat r\cdot p)\hat r)
+$$
+
+Now, for the other term, we have :
+
+$$
+GMm \frac{d}{dt}\har r = GMm \frac{d}{dt} \frac{\vec r}{r} = GMm (-\frac{1}{r^2}\frac{dr}{dt}\vec r + \frac{1}{r}\vec v) \\ =
+\frac{GMm}{r} (-\frac{1}{r}v_r\vec r + \vec v) = \frac{GMm}{r} (-(\vec v\cdot \hat r)\hat r + \vec v) \\ =
+\frac{GM}{r} (-(\vec p\cdot \hat r)\hat r + \vec p)
+$$
+
+Thus, subtracting these two will give 0. Hence we have proved that $\{\vec A, H\} = 0$, and thus $\frac{d}{dt}\vec A$ = 0. 
+
+We already know that $\frac{d}{dt}\vec L = 0$. What this means is than any function of the _components_ of $\vec A$ and $\vec L$ is also conserved (due to multivariable chain rule).
+In fact, due to the antisymmetry property of poisson bracket, we have 
+
+$$
+\frac{d}{dt}\{a,b\} = \{\{a,b\},H\} = \{a,\{b,H\}\} - \{b,\{a,H\}\}
+$$
+
+Thus, any poisson bracket $\{L_i,A_j\}, \{L_i,L_j\}, \{A_i,A_j\}$ is also a constant across time.
+
+Define $\vec D = \vec A / \sqrt{-2mE}$
+The poisson brackets of all elements with all other elements is give as follows :
+
+
+| | $D_1$ | $D_2$ | $D_3$ | $L_1$ | $L_2$ | $L_3$ |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **$D_1$** | $0$ | $L_3$ | $-L_2$ | $0$ | $D_3$ | $-D_2$ |
+| **$D_2$** | $-L_3$ | $0$ | $L_1$ | $-D_3$ | $0$ | $D_1$ |
+| **$D_3$** | $L_2$ | $-L_1$ | $0$ | $D_2$ | $-D_1$ | $0$ |
+| **$L_1$** | $0$ | $D_3$ | $-D_2$ | $0$ | $L_3$ | $-L_2$ |
+| **$L_2$** | $-D_3$ | $0$ | $D_1$ | $-L_3$ | $0$ | $L_1$ |
+| **$L_3$** | $D_2$ | $-D_1$ | $0$ | $L_2$ | $-L_1$ | $0$ |
+
+Now, for the $so(4)$ group of antisymmetric 4x4 rotation matrices $J_{ij}$ that rotate in a the $ij$ plane, we can define the commutator $[a,b] = ab- ba$ as the group operation. This then gives us the next _commutator_ table :
+
+
+| | $J_{12}$ | $J_{13}$ | $J_{14}$ | $J_{23}$ | $J_{24}$ | $J_{34}$ |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **$J_{12}$** | $0$ | $-J_{23}$ | $-J_{24}$ | $J_{13}$ | $J_{14}$ | $0$ |
+| **$J_{13}$** | $J_{23}$ | $0$ | $-J_{34}$ | $-J_{12}$ | $0$ | $J_{14}$ |
+| **$J_{14}$** | $J_{24}$ | $J_{34}$ | $0$ | $0$ | $-J_{12}$ | $-J_{13}$ |
+| **$J_{23}$** | $-J_{13}$ | $J_{12}$ | $0$ | $0$ | $-J_{34}$ | $J_{24}$ |
+| **$J_{24}$** | $-J_{14}$ | $0$ | $J_{12}$ | $J_{34}$ | $0$ | $-J_{23}$ |
+| **$J_{34}$** | $0$ | $-J_{14}$ | $J_{13}$ | $-J_{24}$ | $J_{23}$ | $0$ |
+
+Turns out that the components of $\vec L,\vec D$ are the generators of a _Lie algebra_ that is isomorphic to $so(4)$. A Lie Albegra has two operations; addition ,which issome sort of abelian/commutative operation that the elements (including the identity "0") form a group over; and the Lie Bracket which is a binary operation $[\cdot,\cdot]: G^2 \to G$ need not have a group.
+
+The Lie Algebra in question is of course $so(4)$.
+
+
 ### Book
 
 - "Computational Physics" by Giordano, Naganishi
