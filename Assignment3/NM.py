@@ -386,5 +386,143 @@ def Orbit(
         AX2.set_ylim(-0.1-np.linalg.norm(r_init),0.1+2*np.linalg.norm(r_init))
         AX2.legend()
 
-Orbit(vis=True,T_max=10,deltas=[0],methods={"LF":0.01,"LFTT":0.01})
+
+def Stellar_Wobble(
+    GM=GM_s,
+    m_by_M = 0.0009546, # for jupiter 
+    methods = {"LF":0.01,"Kepler":0.01},
+    T_max = 50, # years
+    a = 5.204, # AU
+    e = 0.048,
+    vis=False
+    ):
+    r_init = a*(1+e)
+    T = 2*np.pi*((a**3)/(GM*(1+m_by_M)))**0.5
+    v_init = (2*np.pi*a / T)*(((1-e)/(1+e))**0.5)
+
+    print(f"r_a = {r_init:.2f}, T_orb = {T:.2f}, v_a = {v_init:.2f}")
+    r_init = np.array([r_init,0])
+    v_init = np.array([0,v_init])
+
+    if vis:
+        fig = plt.figure(figsize=(10,20))
+        AX = fig.subplots(9,1,sharex=True)
+        fig2 = plt.figure()
+        AX2 = fig2.subplots(1,1)
+    colors = ["blue","red","green","black","purple","yellow","brown"][::-1]
+
+    for method, dt in methods.items():
+                if vis: c = colors.pop()
+                t = np.arange(0,T_max+dt/2,dt)
+                r = np.zeros((t.shape[0],2))
+                v = np.zeros((t.shape[0],2))
+                r[0] = r_init
+                v[0] = v_init
+                if method=="LF":
+                    for i in range(t.shape[0]-1):
+                        LF_step(r,v,gravity,dt,i,GM=GM*(1 + m_by_M))
+                elif method=="LFTT":
+                    W = np.zeros_like(t)
+                    W[0] = 1/np.linalg.norm(r_init)
+                    for i in range(t.shape[0]-1):
+                        LFTT_step(W,t,r,v,gravity,dt,i,GM = GM*(1 + m_by_M))
+                elif method=="LFAS":
+                    for i in range(t.shape[0]-1):
+                        LF_adaptive_step(t,r,v,gravity,dt,i,GM = GM*(1 + m_by_M))
+                elif method=="Kepler":
+                    psi = t * (2*np.pi/T)
+                    t = T * (psi + e * np.sin(psi)) / (2*np.pi)
+                    ctheta = (e + np.cos(psi))/(1 + e*np.cos(psi))
+                    tthetaby2 = ((1-e)/(1+e))**0.5 * np.tan(psi/2)
+                    stheta = 2*tthetaby2/(1 + tthetaby2**2)
+                    r = a*(1-e*e)/(1-e*ctheta)
+                    b = a*(1-e*e)**0.5
+                    omega = (2*np.pi*a*b)/(T*(r**2))
+                    theta = np.arctan2(stheta,ctheta)
+                    theta = theta + (theta < 0)*2*np.pi
+                    x = r*ctheta
+                    y = r*stheta
+                    v_y = (2*np.pi*a*a/(T*b))*ctheta
+                    v_star_y = v_y * (m_by_M/(1 + m_by_M))
+
+                else: raise ValueError(f"unknown method: {method}")
+                if method != "Kepler":
+                    x = r[:,0]
+                    y = r[:,1]
+                    v_x = v[:,0]
+                    v_y = v[:,1]
+                    v_star = v * m_by_M / (1 + m_by_M)
+                    v_star_x = v_star[:,0]
+                    v_star_y = v_star[:,1]
+                    theta = np.arctan2(y,x)
+                    theta = theta + 2*np.pi*(theta <  0)
+                    r = (x**2 + y**2)**0.5
+                    v = (v_x**2 + v_y**2)**0.5
+                    v_theta = (-y*v_x + x*v_y)/r
+                    omega = v_theta/r
+                    v_r = (x*v_x + y*v_y)/r
+
+                r_prev = np.concatenate((r[:1],r[:-1]))
+                r_next = np.concatenate((r[1:],r[-1:]-1e-12))
+                i_r = np.flatnonzero((r < r_prev) & (r <= r_next))
+                theta_prev = np.concatenate((theta[:1],theta[:-1]))
+                theta_next = np.concatenate((theta[1:],theta[-1:]))
+                i_theta = np.flatnonzero((theta < theta_prev) & (theta <= theta_next))
+                n_r = np.zeros_like(t,dtype=int)
+                for i in i_r :
+                    n_r = n_r + (np.arange(t.shape[0]) >= i)
+                n_theta = np.zeros_like(t,dtype=int)
+                for i in i_theta :
+                    n_theta = n_theta + (np.arange(t.shape[0]) >= i)
+                cond = (f"({method}," + r" $\Delta t=" + str(dt) + "$)")
+
+                if not vis:continue
+                if method !="Kepler": AX[0].plot(t,v_x,label=cond,color=c) 
+                AX[1].plot(t,v_y,label=cond,color=c)
+                AX[2].plot(t,theta,label=cond,color=c)
+                AX[2].plot(t[i_theta],theta[i_theta],'o',label="minima " + cond,color=c)
+                AX[3].plot(t,r,label=cond,color=c)
+                AX[3].plot(t[i_r],r[i_r],'o',label="minima " + cond,color=c)
+                if method !="Kepler": AX[4].plot(t,v,label=cond,color=c)
+                if method !="Kepler": AX[5].plot(t,v_r,label=cond,color=c)
+                AX[6].plot(t,omega,label=cond,color=c)
+                if method !="Kepler": AX[7].plot(t,v_star_x,label=cond,color=c)
+                AX[8].plot(t,v_star_y,label=cond,color=c)
+
+                AX2.plot(x,y,label=cond,color=c)
+                AX2.plot(x[0],y[0],'o',label="initial position" + cond,color=c)
+
+    if vis:
+        AX[2].set_ylim(0,2*np.pi)
+        AX[2].set_yticks([0,2*np.pi],[0,r"$2\pi$"])
+        AX[0].legend()
+        AX[4].legend()
+        AX[5].legend()
+        AX[2].legend()
+        AX[7].legend()
+        AX[8].legend()
+        ylabels = [
+            "v_x","v_y",
+            r"\theta","r",
+            "v","v_r",
+            r"\omega",
+            r"v_{*x}",r"v_{*y}"]
+        for ax,lbl in zip(AX,ylabels): 
+            ax.set_ylabel("$" + lbl + "$")
+
+        AX[8].set_xlabel(r"$t$ (years)")
+
+        AX2.set_xlabel("$x$ (AU)")
+        AX2.set_ylabel("$y$ (AU)")
+        AX2.plot([0],[0],'o',label="sun",color="yellow",markersize=10)
+        AX2.axhline(0)
+        AX2.axvline(0)
+        AX2.set_aspect('equal')
+        AX2.set_xlim(-0.1-np.linalg.norm(r_init),0.1+2*np.linalg.norm(r_init))
+        AX2.set_ylim(-0.1-np.linalg.norm(r_init),0.1+2*np.linalg.norm(r_init))
+        AX2.legend()
+    return t, theta
+
+
+Stellar_Wobble(vis=True)
 plt.show()

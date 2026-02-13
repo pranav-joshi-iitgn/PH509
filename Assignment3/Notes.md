@@ -391,6 +391,100 @@ Turns out that the components of $\vec L,\vec D$ are the generators of a _Lie al
 
 The Lie Algebra in question is of course $so(4)$.
 
+## Star Wobbles and Exoplanents
+
+RV is "Radial Velocity" method. This is used to detect wobbling of a star. It uses the Doppler effect (for light) to get the (radial) velocity. (Note : "radial" means the direction from the oserver at the origin to the star). 
+
+Remember that for a planet with position $\vec r_1$ and start with position $r_2$, and masses $m,M$ respectively, we had :
+
+$$
+\vec R = \frac{m \vec r_1 + M \vec r_2}{m + M} \\
+\vec r = \vec r_1 - \vec r_2 \\
+\implies (\frac{m+M}{m}\vec R - \vec r) =  (\frac{M}{m} +1)\vec r_2  \\
+\implies (\frac{m+M}{m})\vec v_C -\vec v = (\frac{M+m}{m})\vec v_2  
+$$
+
+Here, $\vec v_2 = \frac{d}{dt} \vec r_2$ is the velocity of the star and $\vec v = \frac{d}{dt} \vec r$ is the relative velocity of the planet. One can define $\vec v_* = \vec v_2 - \vec R$ as the relative velocity of the star wrt the center of mass, giving us :
+
+$$
+\vec v_* = - (\frac{m}{M+m})\vec v
+$$
+
+Now, $\vec r$ changes as per the accelleration $\vec a(\vec r) = - \hat r G(M+m)/r^2 $ and can be computed numerically using the code we have written. This will then give us $\vec v$ and then $\vec v_*$ . 
+
+Then, the component of $\vec v_*$ in the direction of (or away from) the observer (not to be confused with $v_r = \vec v \cdot \hat r$). 
+
+Now, the orbit isn't necessarily in the "x-y" plane, but at an inclination. 
+To make things simple, let's define $\hat z$ as the direction that the observer is looking. Then, let $\hat n$ be a vector normal to the actual plane in which the star and planet are. Then, the inclination $i$ of $\hat n$ with $\hat z$ can be estimated using Doppler effect.
+Let's also assume the rotation done is about $\hat x$ as the axis. Thus, the x-axis is the line joining the points of intersection of the x-y plane and the orbit of the planet.  
+
+Let $\theta_a$ (called $\omega$ in the chapter 4 of the book) be the angle that the aphelion $\vec r_a$ makes with $\hat x$. 
+
+It's easier to think of the orbit as being transformed from the usual setup by the rotation $R_x(i)R_z(\theta_a)$.
+
+With $\hat z$ as the line of sight, we have $v_{*z}$ as the "radial velocity". 
+
+Define the distance from the focus for a standard ellipse as :
+
+$$
+r_s(\theta) = a(1-e^2)/(1-e\cos\theta)
+$$
+
+Here, $\theta$ is the angle that the ray joining the focus to the point makes with the x-axis. 
+
+Then, the distance from focus at angle $\theta$ from x-axis for an ellipse rotated by $\theta_a$ about the focus is $r_s(\theta-\theta_a)$. The y coordinate is then $y = r_s(\theta - \theta_a) \sin\theta$. The velocity component along $\hat y$ is then: 
+
+$$
+\frac{d}{dt}y = \omega[r_s'(\theta - \theta_a)\sin\theta + r_s(\theta - \theta_a) \cos\theta] = \frac{2\pi ab}{T}[\frac{r_s'}{r_s^2}(\theta - \theta_a)\sin\theta + \frac{1}{r_s}\cos\theta] \\= 
+\frac{2\pi ab}{T(1-e^2)}[- \frac{d}{d\theta}(1/r_s)(\theta - \theta_a) \sin\theta + (1/r_s)(\theta - \theta_a)\cos\theta] \\= 
+\frac{2\pi b}{T(1-e^2)}[-e\sin(\theta - \theta_a)\sin\theta + (1 - e \cos(\theta - \theta_a))\cos\theta] \\= \frac{2\pi a}{T\sqrt{1-e^2}} [\cos\theta - e\cos\theta_a]
+$$
+
+This is without the rotation $R_x(i)$ about the x-axis and only with the rotation $R_z(\theta_a)$. 
+
+On applying the rotation, the x component of the velocity doesn't change, but the y component and z component are now 
+
+$$
+v_y = \frac{2\pi a}{T\sqrt{1-e^2}}(\cos\theta - e\cos\theta_a)\cos i \\
+v_z = \frac{2\pi a}{T\sqrt{1-e^2}}(\cos\theta - e\cos\theta_a)\sin i \\
+$$
+
+Thus, the radial velocity is :
+
+$$
+v_z = \frac{2\pi a}{T\sqrt{1-e^2}}\sin i(\cos\theta - e\cos\theta_a)
+$$
+
+This then gives the radial velocity for the star as :
+
+$$
+v_{*z} = \gamma(\cos\theta - e\cos\theta_a) \\
+\text{where } \gamma = \frac{m}{m+M} \frac{2\pi a}{T\sqrt{1-e^2}}\sin i
+$$
+
+Note that in the book (and in the lab sheet) we defined $\theta$ using ray from focus to aphelion as reference ray. But here, we are using the x-axis as the referce. 
+
+Going back to the convention used in the book, we should write $v_{*z} = \gamma(\cos(\theta + \theta_a) - e\cos\theta_a)$.
+
+All of this was done in the CoM frame of reference. Moving to the observer frame, we have the actual radial velocity $C_z + v_{*z} = C_z + \gamma(\cos(\theta + \theta_a) - e\cos\theta_a)$ where $\vec C = \frac{d}{dt}\vec R$ . 
+
+Although simulating $\theta$ as a function of $t$ for a given $e,a,T$ is possible, the best method is to use Kepler's equation and vary the "eccentricity anamoly" $\psi$ to produce :
+
+$$
+t(\psi) = \frac{T}{2\pi}(\psi + e \sin\psi) \\
+\cos\theta(\psi) = \frac{e + \cos\psi}{1 + e\cos\psi}
+$$
+
+Otherwise, we can compute the speed and distance at aphelion as :
+
+$$
+v_a = \frac{2\pi a}{T} \sqrt{\frac{1-e}{1+e}} \\
+r_a = a(1+e)
+$$
+
+Then, we just need to set these as the initial conditions for our numerical integrator. 
+
+But using the Kepler's equation is exact; so we will do that. 
 
 ### Book
 
