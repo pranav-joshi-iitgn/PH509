@@ -65,7 +65,6 @@ $$
 \vec r = \vec r_1 - \vec r_2 \\
 m\ddot{\vec r_1} = \frac{GMm}{r^2} (-\hat r) \quad \text{and} \quad
 M\ddot{\vec r_2} = \frac{GMm}{r^2} (\hat r) \\\implies
-
 \ddot{\vec R} = 0 \quad [\text{addition}] \\
 \text{and } \ddot{\vec r} = \frac{G(M+m)}{r^2}\hat r
 $$
@@ -346,7 +345,7 @@ $$
 Now, for the other term, we have :
 
 $$
-GMm \frac{d}{dt}\har r = GMm \frac{d}{dt} \frac{\vec r}{r} = GMm (-\frac{1}{r^2}\frac{dr}{dt}\vec r + \frac{1}{r}\vec v) \\ =
+GMm \frac{d}{dt}\hat r = GMm \frac{d}{dt} \frac{\vec r}{r} = GMm (-\frac{1}{r^2}\frac{dr}{dt}\vec r + \frac{1}{r}\vec v) \\ =
 \frac{GMm}{r} (-\frac{1}{r}v_r\vec r + \vec v) = \frac{GMm}{r} (-(\vec v\cdot \hat r)\hat r + \vec v) \\ =
 \frac{GM}{r} (-(\vec p\cdot \hat r)\hat r + \vec p)
 $$

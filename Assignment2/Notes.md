@@ -27,9 +27,10 @@ $$
 where $J$ is the matrix constructed as :
 
 $$
-J = \begin{bmatrix}
+J = 
+\begin{bmatrix}
 \boldsymbol{0} & I_n \\
-- I_n & \boldsymbol{0}
+(- I_n) & \boldsymbol{0}
 \end{bmatrix}
 $$
 
@@ -78,7 +79,7 @@ $$
 For a given scalar function $f(\vec z)$ and the hamiltonian $H(\vec z)$, we can define the Liouville operator as :
 
 $$
-D_H f = \{f H\} = [\nabla H, \nabla f] = (J \nabla H)\cdot \nabla f 
+D_H f = \{f, H\} = [\nabla_z H, \nabla_z f] = (J_{2n} \nabla_z H)\cdot \nabla_z f 
 $$
 
 Now, let's evaluate $\frac{d}{dt} f(\vec z(t))$ using the chain rule. We have :
@@ -284,14 +285,10 @@ $$
 \begin{bmatrix}
 \vec q_{n+1} \\
 \vec p_{n+1}
-\end{bmatrix}
-=
+\end{bmatrix} =
 M \vec z_n \\
 \text{where } M = \begin{bmatrix}
-
-(1- \Delta t^2/2)I_n & (\Delta t - \Delta t^3/4)I_n \\
--\Delta tI_n &  (1-\Delta t^2/2)I_n
-
+(1- \Delta t^2/2)I_n & (\Delta t - \Delta t^3/4)I_n \\ - \Delta tI_n &  (1-\Delta t^2/2)I_n
 \end{bmatrix}
 $$
 
