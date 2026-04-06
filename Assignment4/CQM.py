@@ -753,83 +753,6 @@ def test_2():
     plt.tight_layout()
     plt.show()
 
-def test_2D_old():
-    """
-    Tests the 2D ADI Time-Dependent Schrodinger Equation solver.
-    Simulates a free particle (V=0) moving in the +x direction.
-    Displays the initial and final probability densities.
-    """
-    # 1. Grid Parameters (Large grid to avoid boundary reflection)
-    dx = 0.5
-    x_left, x_right = -20.0, 20.0
-    y_down, y_up = -20.0, 20.0
-    
-    # Time parameters
-    dt = 0.05
-    steps = 300
-
-    # Initialize Grid
-    x, y, X, Y = init_grid_2d(dx, x_left, x_right, y_down, y_up)
-
-    # 2. Wave Packet Parameters
-    x0, y0 = -10.0, 0.0  # Start on the left, centered vertically
-    sigma = 2.0
-    kx, ky = 2.0, 0.0    # Momentum purely in the +x direction
-
-    # Initialize Particle
-    psi = init_moving_gaussian_2d(X, Y, x0, y0, sigma, kx, ky)
-    
-    # Save initial probability density for plotting
-    prob_density_initial = np.abs(psi)**2
-
-    # 3. Initialize Potential (Free Particle)
-    # V(x,y) = 0 everywhere
-    V_2d = np.zeros_like(X)
-
-    # 4. Precompute ADI Matrices
-    # Calculate the main diagonals
-    a_x_2d = compute_a_x(dx, dt, V_2d)
-    b_x_2d = compute_b_x(dx, dt, V_2d)
-    a_y_2d = compute_a_y(dx, dt, V_2d) # dy = dx 
-    b_y_2d = compute_b_y(dx, dt, V_2d)
-
-    # Construct the 3D banded matrix arrays
-    A_x = compute_matrices_A_x(a_x_2d)
-    B_x = compute_matrices_B_x(b_x_2d)
-    A_y = compute_matrices_A_y(a_y_2d)
-    B_y = compute_matrices_B_y(b_y_2d)
-
-    # 5. Time Evolution Loop
-    print(f"Evolving wave packet for {steps} steps (Total Time = {steps*dt:.2f})...")
-    for step in range(steps):
-        psi = step_adi_2d(psi, A_x, B_x, A_y, B_y)
-        print(step,'/',steps,'done',end='\r',flush=True)
-        
-    # Calculate final probability density
-    prob_density_final = np.abs(psi)**2
-    print("Evolution complete.")
-
-    # 6. Plotting Results
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    extent = [x_left, x_right, y_down, y_up]
-
-    # Plot Initial State
-    im0 = axes[0].imshow(prob_density_initial, extent=extent, origin='lower', cmap='inferno')
-    axes[0].set_title("Initial $|\psi(x,y,0)|^2$")
-    axes[0].set_xlabel("x")
-    axes[0].set_ylabel("y")
-    fig.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
-
-    # Plot Final State
-    im1 = axes[1].imshow(prob_density_final, extent=extent, origin='lower', cmap='inferno')
-    axes[1].set_title(f"Final $|\psi(x,y,T)|^2$ (T = {steps*dt:.2f})")
-    axes[1].set_xlabel("x")
-    axes[1].set_ylabel("y")
-    fig.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)
-
-    plt.tight_layout()
-    plt.show()
-
 def psi_to_phi_2d(x, y, psi):
     """
     Converts 2D position wave function psi(x,y) to momentum wave function phi(k_x,k_y).
@@ -876,25 +799,44 @@ def simulate_2D(
 
     psi_curr = psi_initial.copy()
 
-    # 3. Metrics Helper Function
+    # 3. Metrics Helper Function (Updated to track most probable values)
     def get_metrics_2d(psi, phi, KX, KY, dkx, dky):
-        norm_x = np.sum(np.abs(psi)**2) * dx * dx # assuming dy=dx
+        # Norms and expectations
+        norm_x = np.sum(np.abs(psi)**2) * dx * dx 
         norm_k = np.sum(np.abs(phi)**2) * dkx * dky
         exp_x = np.sum(X * np.abs(psi)**2) * dx * dx
         exp_y = np.sum(Y * np.abs(psi)**2) * dx * dx
         exp_px = np.sum(KX * np.abs(phi)**2) * dkx * dky
         exp_py = np.sum(KY * np.abs(phi)**2) * dkx * dky
-        # Expected Hamiltonian (Kinetic + Potential)
         exp_H = np.sum(0.5 * (KX**2 + KY**2) * np.abs(phi)**2) * dkx * dky + \
                 np.sum(V_2d * np.abs(psi)**2) * dx * dx
         
-        return norm_x, norm_k, exp_x, exp_y, exp_px, exp_py, exp_H
+        # Most probable position coordinates
+        idx_y, idx_x = np.unravel_index(np.argmax(np.abs(psi)**2), psi.shape)
+        x_p, y_p = X[idx_y, idx_x], Y[idx_y, idx_x]
+        
+        # Most probable momentum coordinates
+        idx_ky, idx_kx = np.unravel_index(np.argmax(np.abs(phi)**2), phi.shape)
+        kx_p, ky_p = KX[idx_ky, idx_kx], KY[idx_ky, idx_kx]
+        
+        return norm_x, norm_k, exp_x, exp_y, exp_px, exp_py, exp_H, x_p, y_p, kx_p, ky_p
 
     # Calculate initial momentum space and metrics
     kx, ky, KX, KY, phi_init = psi_to_phi_2d(x, y, psi_curr)
     dkx, dky = kx[1] - kx[0], ky[1] - ky[0]
     
-    n_x_0, n_k_0, e_x_0, e_y_0, e_px_0, e_py_0, e_H_0 = get_metrics_2d(psi_curr, phi_init, KX, KY, dkx, dky)
+    n_x_0, n_k_0, e_x_0, e_y_0, e_px_0, e_py_0, e_H_0, x_p_0, y_p_0, kx_p_0, ky_p_0 = get_metrics_2d(psi_curr, phi_init, KX, KY, dkx, dky)
+
+    # NEW: History Dictionary
+    history = {
+        't': np.zeros(frames),
+        'norm_x': np.zeros(frames), 'norm_k': np.zeros(frames),
+        'exp_x': np.zeros(frames), 'exp_y': np.zeros(frames),
+        'exp_px': np.zeros(frames), 'exp_py': np.zeros(frames),
+        'exp_H': np.zeros(frames),
+        'x_p': np.zeros(frames), 'y_p': np.zeros(frames),
+        'kx_p': np.zeros(frames), 'ky_p': np.zeros(frames)
+    }
 
     # 4. Setup Figure and Axes for Animation
     fig = plt.figure(figsize=(10, 10))
@@ -904,14 +846,19 @@ def simulate_2D(
     extent_k = [kx[0], kx[-1], ky[0], ky[-1]]
 
     if show_animation:
-        # Setup ax1 (Position Space)
+        # Position Space
         im_psi = ax1.imshow(np.abs(psi_curr)**2, extent=extent_r, origin='lower', cmap='inferno', vmin=0)
         ax1.set_title(r"Position Space $|\psi(x,y)|^2$")
         ax1.set_xlabel("x")
         ax1.set_ylabel("y")
         fig.colorbar(im_psi, ax=ax1, fraction=0.046, pad=0.04)
+        
+        # Position Scatter Overlays
+        scatter_exp_r = ax1.scatter([e_x_0], [e_y_0], color='cyan', marker='x', s=100, label=r'$\langle \mathbf{r} \rangle$')
+        scatter_prob_r = ax1.scatter([x_p_0], [y_p_0], color='purple', marker='+', s=100, label=r'Most Probable $\mathbf{r}$')
+        ax1.legend(loc='upper right')
 
-        # Setup ax2 (Potential Energy)
+        # Potential Energy
         im_V = ax2.imshow(V_2d, extent=extent_r, origin='lower', cmap='viridis')
         ax2.contour(X, Y, V_2d, colors='white', alpha=0.3, levels=10)
         ax2.set_title(r"Potential Energy $V(x,y)$")
@@ -919,19 +866,23 @@ def simulate_2D(
         ax2.set_ylabel("y")
         fig.colorbar(im_V, ax=ax2, fraction=0.046, pad=0.04)
 
-        # Setup ax3 (Momentum Space)
+        # Momentum Space
         im_phi = ax3.imshow(np.abs(phi_init)**2, extent=extent_k, origin='lower', cmap='magma', vmin=0)
         ax3.set_title(r"Momentum Space $|\phi(k_x, k_y)|^2$")
         ax3.set_xlabel("$k_x$")
         ax3.set_ylabel("$k_y$")
         
-        # Determine bounds for momentum plot zoom
+        # Momentum Scatter Overlays
+        scatter_exp_k = ax3.scatter([e_px_0], [e_py_0], color='cyan', marker='x', s=100, label=r'$\langle \mathbf{p} \rangle$')
+        scatter_prob_k = ax3.scatter([kx_p_0], [ky_p_0], color='purple', marker='+', s=100, label=r'Most Probable $\mathbf{p}$')
+        ax3.legend(loc='upper right')
+        
         k_bound = max(abs(e_px_0), abs(e_py_0)) + 4.0 
         ax3.set_xlim(-k_bound, k_bound)
         ax3.set_ylim(-k_bound, k_bound)
         fig.colorbar(im_phi, ax=ax3, fraction=0.046, pad=0.04)
 
-        # Setup ax4 (Bar Chart for Invariants)
+        # Bar Chart
         bar_labels = [r'$\int |\psi|^2$', r'$\int |\phi|^2$', r'$\langle H \rangle$']
         bars = ax4.bar(bar_labels, [0, 0, 0], color=['blue', 'orange', 'green'])
         ax4.set_ylim(-1, 1) 
@@ -943,30 +894,43 @@ def simulate_2D(
     # 5. Computation and Update Step
     def animate(frame):
         nonlocal psi_curr
-
-        print(frame,'/',frames,'done\r',end='',flush=True)
+        
+        print('doing frame',frame+1,'/',frames,end='\r',flush=True)
         
         # Advance Step
         if frame > 0:
-            if method=="ADI":
+            if method == "ADI":
                 psi_curr = step_adi_2d(psi_curr, A_x, B_x, A_y, B_y)
         
+
         # Get momentum space & metrics
         _, _, _, _, phi_curr = psi_to_phi_2d(x, y, psi_curr)
-        n_x, n_k, e_x, e_y, e_px, e_py, e_H = get_metrics_2d(psi_curr, phi_curr, KX, KY, dkx, dky)
+        n_x, n_k, e_x, e_y, e_px, e_py, e_H, x_p, y_p, kx_p, ky_p = get_metrics_2d(psi_curr, phi_curr, KX, KY, dkx, dky)
         
+        # Record into history
+        history['t'][frame] = frame * dt
+        history['norm_x'][frame], history['norm_k'][frame] = n_x, n_k
+        history['exp_x'][frame], history['exp_y'][frame] = e_x, e_y
+        history['exp_px'][frame], history['exp_py'][frame] = e_px, e_py
+        history['exp_H'][frame] = e_H
+        history['x_p'][frame], history['y_p'][frame] = x_p, y_p
+        history['kx_p'][frame], history['ky_p'][frame] = kx_p, ky_p
+
         if show_animation:
-            # Update Image data
             prob_density_x = np.abs(psi_curr)**2
             prob_density_k = np.abs(phi_curr)**2
             im_psi.set_data(prob_density_x)
             im_phi.set_data(prob_density_k)
             
-            # Dynamically adjust color bounds for dispersing wavepackets
             im_psi.set_clim(vmax=np.max(prob_density_x) or 1.0)
             im_phi.set_clim(vmax=np.max(prob_density_k) or 1.0)
             
-            # Update bar chart
+            # Update scatter dot positions
+            scatter_exp_r.set_offsets([[e_x, e_y]])
+            scatter_prob_r.set_offsets([[x_p, y_p]])
+            scatter_exp_k.set_offsets([[e_px, e_py]])
+            scatter_prob_k.set_offsets([[kx_p, ky_p]])
+
             pct_n_x = (n_x - n_x_0) / n_x_0 * 100
             pct_n_k = (n_k - n_k_0) / n_k_0 * 100
             pct_H = (e_H - e_H_0) / e_H_0 * 100 if e_H_0 != 0 else 0
@@ -982,7 +946,8 @@ def simulate_2D(
                 
             fig.suptitle(f"Frame: {frame} | $\\langle x \\rangle$: {e_x:.2f} | $\\langle y \\rangle$: {e_y:.2f}", fontsize=12)
             
-            return [im_psi, im_phi] + list(bars)
+            # Return updated artists
+            return [im_psi, im_phi, scatter_exp_r, scatter_prob_r, scatter_exp_k, scatter_prob_k] + list(bars)
 
     # 6. Execute Simulation
     anim_widget = None
@@ -999,11 +964,11 @@ def simulate_2D(
     else:
         print(f"\nRunning fast simulation (no animation) for {frames} frames...")
         for frame in range(frames):
-            print(f"\rProcessing frame {frame + 1}/{frames}...", end="", flush=True)
             animate(frame)
-        print("Done!")
+        print("\nDone!")
 
     return {
+        'history': history,          # NEW: Added history to output
         'animation': anim_widget,
         'raw_ani': ani if show_animation else None,
         'final_psi': psi_curr,
@@ -1011,13 +976,52 @@ def simulate_2D(
         'Y_grid': Y
     }
 
+def plot_static_results_2d(history):
+    """Generates the static plots from a populated 2D history dictionary."""
+    fig_static, axes = plt.subplots(4, 1, figsize=(8, 12), sharex=True)
+    
+    # 1. Position Trajectories
+    axes[0].plot(history['t'], history['exp_x'], label=r'$\langle x \rangle$', color='blue')
+    axes[0].plot(history['t'], history['x_p'], label=r'$x_p$ (Most Probable)', color='blue', linestyle='--')
+    axes[0].plot(history['t'], history['exp_y'], label=r'$\langle y \rangle$', color='green')
+    axes[0].plot(history['t'], history['y_p'], label=r'$y_p$ (Most Probable)', color='green', linestyle='--')
+    axes[0].set_title("Position Trajectories over Time")
+    axes[0].set_ylabel("Position")
+    axes[0].legend(loc='upper right')
+    axes[0].grid(True, alpha=0.3)
+
+    # 2. Momentum Trajectories
+    axes[1].plot(history['t'], history['exp_px'], label=r'$\langle p_x \rangle$', color='orange')
+    axes[1].plot(history['t'], history['kx_p'], label=r'$p_{xp}$ (Most Probable)', color='orange', linestyle='--')
+    axes[1].plot(history['t'], history['exp_py'], label=r'$\langle p_y \rangle$', color='purple')
+    axes[1].plot(history['t'], history['ky_p'], label=r'$p_{yp}$ (Most Probable)', color='purple', linestyle='--')
+    axes[1].set_title("Momentum Trajectories over Time")
+    axes[1].set_ylabel("Momentum")
+    axes[1].legend(loc='upper right')
+    axes[1].grid(True, alpha=0.3)
+
+    # 3. Normalization and Energy
+    axes[2].plot(history['t'], history['norm_x'], label=r'$\int |\psi|^2 dx dy$', color='black')
+    axes[2].plot(history['t'], history['norm_k'], label=r'$\int |\phi|^2 dk_x dk_y$', color='gray', linestyle='--')
+    axes[2].set_title("Invariants over Time")
+    axes[2].set_ylabel("Norm")
+    axes[2].legend(loc='upper right')
+    axes[2].grid(True, alpha=0.3)
+    
+    axes[3].plot(history['t'], history['exp_H'], label=r'$\langle H \rangle$', color='red')
+    axes[3].set_ylabel("Energy")
+    axes[3].legend(loc='upper right')
+
+    axes[3].set_xlabel("Time (t)")
+    plt.tight_layout()
+    return fig_static
+
 def test_2D():
     """
-    Tests the 2D ADI Time-Dependent Schrodinger Equation solver using the simulate_2D pipeline.
+    Tests the 2D ADI TDSE solver.
     Simulates a free particle (V=0) moving in the +x direction.
-    Generates an animation and saves static plots.
+    Generates an animation and saves comprehensive static line plots of history.
     """
-    # 1. Wrapper functions for initial state and potential
     def initial_packet(X, Y):
         sigma = 2.0
         x0 = -10.0
@@ -1027,10 +1031,8 @@ def test_2D():
         return init_moving_gaussian_2d(X, Y, x0, y0, sigma, kx, ky)
 
     def free_potential(X, Y):
-        # V(x,y) = 0 everywhere
         return np.zeros_like(X)
 
-    # 2. Run the 2D Simulation
     print("Initializing 2D Simulation...")
     res = simulate_2D(
         V_func=free_potential,
@@ -1041,49 +1043,21 @@ def test_2D():
         x_right=20.0,
         y_down=-20.0,
         y_up=20.0,
-        frames=150,               # Reduced slightly from 300 for faster GIF generation
+        frames=500,               
         method="ADI",
         show_animation=True,
-        output_format='save'      # Skip the HTML widget, we will save the raw animation
+        output_format='save'      
     )
 
-    # 3. Save the Animation
     if res['raw_ani'] is not None:
         writer = PillowWriter(fps=20)
         res['raw_ani'].save("free_particle_2d.gif", writer=writer)
-        print("GIF saved successfully as 'free_particle_2d.gif'!")
+        print("\nGIF saved successfully as 'free_particle_2d.gif'!")
 
-    # 4. Generate and Save the Static Figure (Initial vs Final Position Space)
-    print("Generating static summary figure...")
-    X = res['X_grid']
-    Y = res['Y_grid']
-    extent = [X.min(), X.max(), Y.min(), Y.max()]
-    
-    # Re-evaluate initial state for the static plot
-    psi_init = initial_packet(X, Y)
-    final_psi = res['final_psi']
-
-    fig_static, axes = plt.subplots(1, 2, figsize=(14, 6))
-
-    # Plot Initial State
-    im0 = axes[0].imshow(np.abs(psi_init)**2, extent=extent, origin='lower', cmap='inferno')
-    axes[0].set_title("Initial $|\psi(x,y,0)|^2$")
-    axes[0].set_xlabel("x")
-    axes[0].set_ylabel("y")
-    fig_static.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
-
-    # Plot Final State
-    im1 = axes[1].imshow(np.abs(final_psi)**2, extent=extent, origin='lower', cmap='inferno')
-    axes[1].set_title("Final $|\psi(x,y,T)|^2$")
-    axes[1].set_xlabel("x")
-    axes[1].set_ylabel("y")
-    fig_static.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)
-
-    plt.tight_layout()
+    # Generate and Save the Static History Figure
+    print("Generating static history figures...")
+    fig_static = plot_static_results_2d(res['history'])
     fig_static.savefig("static_results_2d.png", dpi=300, bbox_inches='tight')
     print("Saved static plot as 'static_results_2d.png'")
 
-    plt.show()
-
-if __name__ == "__main__":
-    test_2D()
+if __name__ == "__main__": test_2D()
