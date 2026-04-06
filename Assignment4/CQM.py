@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
@@ -442,7 +443,7 @@ def plot_static_results(history, F_func=None):
     
     return fig_static
 
-if __name__ == "__main__":
+def test_1D():
     # Setup for Harmonic Oscillator (Assignment parameters)
     def initial_packet(x):
         sigma = 0.7
@@ -476,3 +477,613 @@ if __name__ == "__main__":
     print("Saved static plot as 'static_results.png'")
 
     plt.close('all')
+
+
+#####################################################################################
+################## 2D case ##########################################################
+#####################################################################################
+
+def init_grid_2d(dx, x_left, x_right, y_down, y_up):
+    """
+    Initializes the 2D spatial grid.
+    Uses a single dx for both dimensions, assuming delta y = delta x.
+    """
+    x = np.arange(x_left, x_right + dx, dx)
+    y = np.arange(y_down, y_up + dx, dx)
+    
+    # Create 2D meshgrid matrices
+    X, Y = np.meshgrid(x, y)
+    
+    return x, y, X, Y
+
+def init_moving_gaussian_2d(X, Y, x0, y0, sigma, kx, ky):
+    """
+    Initializes a 2D Gaussian wave packet with initial momentum.
+    
+    Parameters:
+    - X, Y: Spatial meshgrid matrices
+    - x0, y0: Initial center of the wave packet
+    - sigma: Spatial spread (standard deviation)
+    - kx, ky: Initial wave numbers (momentum in atomic units)
+    """
+    # 2D Normalization constant so that integral of |psi|^2 dx dy = 1
+    norm = 1.0 / (sigma * np.sqrt(np.pi))
+    
+    # Real Gaussian envelope
+    envelope = np.exp(-((X - x0)**2 + (Y - y0)**2) / (2 * sigma**2))
+    
+    # Complex phase for momentum p = hbar * k (in atomic units, hbar = 1)
+    phase = np.exp(1j * (kx * X + ky * Y))
+    
+    # Final wave function
+    psi_0 = norm * envelope * phase
+    
+    return psi_0.astype(complex)
+
+def gaussian_potential_2d(X, Y, amplitude=1.0, center_x=0.0, center_y=0.0, width_x=1.0, width_y=1.0):
+    """Returns a 2D Gaussian potential barrier/well."""
+    return amplitude * np.exp(-((X - center_x)**2 / (2 * width_x**2) + (Y - center_y)**2 / (2 * width_y**2)))
+
+def step_potential_2d(X, Y, step_pos_x=0.0, v_left=0.0, v_right=1.0):
+    """
+    Returns a 2D step potential along the x-axis. 
+    (Can be easily modified to step along y or an arbitrary line).
+    """
+    return np.where(X < step_pos_x, v_left, v_right)
+
+def harmonic_potential_2d(X, Y, omega_x=1.0, omega_y=1.0):
+    """Returns a 2D harmonic oscillator potential."""
+    return 0.5 * (omega_x**2 * X**2 + omega_y**2 * Y**2)
+
+def linear_potential_2d(X, Y, F_x=1.0, F_y=1.0):
+    """Returns a 2D linear potential (constant force)."""
+    return F_x * X + F_y * Y
+
+def compute_a_x(dx, dt, V_2d):
+    """
+    Computes the main diagonal array for the A_x matrices (implicit x-step).
+    Uses dt/2 for the time step and V(x,y)/2 for the potential split.
+    """
+    return (8j * (dx**2 / dt)) - (dx**2 * V_2d) - 2
+
+def compute_b_x(dx, dt, V_2d):
+    """
+    Computes the main diagonal array for the B_x matrices (explicit x-step).
+    """
+    return (8j * (dx**2 / dt)) + (dx**2 * V_2d) + 2
+
+def compute_a_y(dy, dt, V_2d):
+    return (8j * (dy**2 / dt)) - (dy**2 * V_2d) - 2
+
+def compute_b_y(dy, dt, V_2d):
+    return (8j * (dy**2 / dt)) + (dy**2 * V_2d) + 2
+
+def compute_matrices_A_x(a_x_2d):
+    """
+    Constructs the A_x matrices for all rows (y-coordinates).
+    Returns a 3D array of shape (Ny, 3, Nx) where A_x[y] is the compact 
+    banded matrix for the y-th row.
+    """
+    Ny, Nx = a_x_2d.shape
+    A_x = np.zeros((Ny, 3, Nx), dtype=complex)
+    A_x[:, 0, 1:] = 1.0     # Upper diagonal (padded at index 0)
+    A_x[:, 1, :] = a_x_2d   # Main diagonal
+    A_x[:, 2, :-1] = 1.0    # Lower diagonal (padded at index Nx-1)
+    return A_x
+
+def compute_matrices_B_x(b_x_2d):
+    """
+    Constructs the B_x matrices for all rows (y-coordinates).
+    Returns a 3D array of shape (Ny, 3, Nx) where B_x[y] is the compact
+    banded matrix for the y-th row.
+    """
+    Ny, Nx = b_x_2d.shape
+    B_x = np.zeros((Ny, 3, Nx), dtype=complex)
+    B_x[:, 0, 1:] = -1.0    
+    B_x[:, 1, :] = b_x_2d   
+    B_x[:, 2, :-1] = -1.0   
+    return B_x
+
+def compute_matrices_A_y(a_y_2d):
+    """
+    Constructs the A_y matrices for all columns (x-coordinates).
+    Returns a 3D array of shape (Nx, 3, Ny) where A_y[x] is the compact 
+    banded matrix for the x-th column.
+    Note: We transpose a_y_2d so the y-elements align as rows for solve_banded.
+    """
+    Ny, Nx = a_y_2d.shape
+    A_y = np.zeros((Nx, 3, Ny), dtype=complex)
+    A_y[:, 0, 1:] = 1.0     
+    A_y[:, 1, :] = a_y_2d.T # Transpose to iterate over columns
+    A_y[:, 2, :-1] = 1.0    
+    return A_y
+
+def compute_matrices_B_y(b_y_2d):
+    """
+    Constructs the B_y matrices for all columns (x-coordinates).
+    Returns a 3D array of shape (Nx, 3, Ny) where B_y[x] is the compact
+    banded matrix for the x-th column.
+    """
+    Ny, Nx = b_y_2d.shape
+    B_y = np.zeros((Nx, 3, Ny), dtype=complex)
+    B_y[:, 0, 1:] = -1.0    
+    B_y[:, 1, :] = b_y_2d.T 
+    B_y[:, 2, :-1] = -1.0   
+    return B_y
+
+def multiply_banded_matrix_vector(B_banded, vec):
+    """
+    Multiplies a compact tridiagonal matrix (shape 3 x N) by a vector of length N.
+    B_banded[0] is the upper diagonal.
+    B_banded[1] is the main diagonal.
+    B_banded[2] is the lower diagonal.
+    """
+    res = np.zeros_like(vec, dtype=complex)
+    
+    # Main diagonal
+    res += B_banded[1] * vec 
+    
+    # Upper diagonal (shifts vector left)
+    res[:-1] += B_banded[0, 1:] * vec[1:] 
+    
+    # Lower diagonal (shifts vector right)
+    res[1:] += B_banded[2, :-1] * vec[:-1]
+    
+    return res
+
+def step_adi_2d(psi_0, A_x, B_x, A_y, B_y):
+    """
+    Performs a single time-step evolution of the 2D TDSE using the ADI method.
+    
+    Parameters:
+    - psi_0: 2D array of the wave function at time t, shape (Ny, Nx), mapped as Psi[y,x].
+    - A_x, B_x: 3D arrays of compact banded matrices for the x-sweep, shape (Ny, 3, Nx).
+    - A_y, B_y: 3D arrays of compact banded matrices for the y-sweep, shape (Nx, 3, Ny).
+    
+    Returns:
+    - psi_t: 2D array of the wave function at time t + dt.
+    """
+    Ny, Nx = psi_0.shape
+    
+    # Temporary array to hold the half-step wave function Psi_{t/2}
+    psi_half = np.zeros_like(psi_0, dtype=complex)
+    
+    # Final array to hold the full-step wave function Psi_t
+    psi_t = np.zeros_like(psi_0, dtype=complex)
+
+    # ---------------------------------------------------------
+    # Step 1: X-Sweep
+    # Solving A_x(y) * Psi_{t/2}[y] = B_x(y) * Psi_0[y] for all y
+    # ---------------------------------------------------------
+    for y in range(Ny):
+        # Extract the y-th row (Psi_0[y])
+        row_vec_0 = psi_0[y, :]
+        
+        # Calculate RHS: B_x(y) * Psi_0[y]
+        rhs_x = multiply_banded_matrix_vector(B_x[y], row_vec_0)
+        
+        # Solve for the half-step row (Psi_{t/2}[y])
+        # (1, 1) indicates 1 lower diagonal and 1 upper diagonal
+        psi_half[y, :] = solve_banded((1, 1), A_x[y], rhs_x)
+
+    # ---------------------------------------------------------
+    # Step 2: Y-Sweep
+    # Solving A_y(x) * Psi_t^T[x] = B_y(x) * Psi_{t/2}^T[x] for all x
+    # ---------------------------------------------------------
+    for x in range(Nx):
+        # Extract the x-th column. 
+        # Slicing [:, x] from the matrix naturally accesses Psi^T[x]
+        col_vec_half = psi_half[:, x]
+        
+        # Calculate RHS: B_y(x) * Psi_{t/2}^T[x]
+        rhs_y = multiply_banded_matrix_vector(B_y[x], col_vec_half)
+        
+        # Solve for the full-step column (Psi_t^T[x])
+        psi_t[:, x] = solve_banded((1, 1), A_y[x], rhs_y)
+
+    return psi_t
+
+def test_2():
+    """
+    Tests the 2D grid generation, wave packet initialization, and 2D potentials.
+    Displays the X matrix, Y matrix, initial probability density, and the 
+    Harmonic potential in a 2x2 subplot figure.
+    """
+    # 1. Grid Parameters
+    dx = 0.5
+    x_left, x_right = -10.0, 10.0
+    y_down, y_up = -10.0, 10.0
+
+    # Initialize Grid
+    x, y, X, Y = init_grid_2d(dx, x_left, x_right, y_down, y_up)
+
+    # 2. Wave Packet Parameters
+    x0, y0 = -4.0, -4.0
+    sigma = 1.5
+    kx, ky = 2.0, 1.0
+
+    # Initialize Particle
+    psi = init_moving_gaussian_2d(X, Y, x0, y0, sigma, kx, ky)
+    probability_density = np.abs(psi)**2
+
+    # 3. Initialize 2D Potential (Harmonic Oscillator)
+    # Using an anisotropic oscillator (different omegas) for visual interest
+    V_harmonic = harmonic_potential_2d(X, Y, omega_x=0.5, omega_y=0.8)
+
+    # 4. Plotting
+    # Create a 2x2 subplot layout
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    
+    # Flatten axes array for easy indexing
+    ax_flat = axes.flatten()
+    
+    # Set the extent for imshow
+    extent = [x_left, x_right, y_down, y_up]
+
+    # Plot X Mesh Matrix
+    im0 = ax_flat[0].imshow(X, extent=extent, origin='lower', cmap='coolwarm')
+    ax_flat[0].set_title("X Mesh Matrix")
+    ax_flat[0].set_xlabel("x")
+    ax_flat[0].set_ylabel("y")
+    fig.colorbar(im0, ax=ax_flat[0], fraction=0.046, pad=0.04)
+
+    # Plot Y Mesh Matrix
+    im1 = ax_flat[1].imshow(Y, extent=extent, origin='lower', cmap='coolwarm')
+    ax_flat[1].set_title("Y Mesh Matrix")
+    ax_flat[1].set_xlabel("x")
+    ax_flat[1].set_ylabel("y")
+    fig.colorbar(im1, ax=ax_flat[1], fraction=0.046, pad=0.04)
+
+    # Plot Probability Density
+    im2 = ax_flat[2].imshow(probability_density, extent=extent, origin='lower', cmap='inferno')
+    ax_flat[2].set_title(r"Initial Probability Density $|\psi(x,y,0)|^2$")
+    ax_flat[2].set_xlabel("x")
+    ax_flat[2].set_ylabel("y")
+    fig.colorbar(im2, ax=ax_flat[2], fraction=0.046, pad=0.04)
+
+    # Plot 2D Harmonic Potential
+    im3 = ax_flat[3].imshow(V_harmonic, extent=extent, origin='lower', cmap='viridis')
+    ax_flat[3].set_title("2D Harmonic Potential $V(x,y)$")
+    ax_flat[3].set_xlabel("x")
+    ax_flat[3].set_ylabel("y")
+    # Add contour lines to make the potential shape clearer
+    ax_flat[3].contour(X, Y, V_harmonic, colors='white', alpha=0.3, levels=10)
+    fig.colorbar(im3, ax=ax_flat[3], fraction=0.046, pad=0.04)
+
+    plt.tight_layout()
+    plt.show()
+
+def test_2D_old():
+    """
+    Tests the 2D ADI Time-Dependent Schrodinger Equation solver.
+    Simulates a free particle (V=0) moving in the +x direction.
+    Displays the initial and final probability densities.
+    """
+    # 1. Grid Parameters (Large grid to avoid boundary reflection)
+    dx = 0.5
+    x_left, x_right = -20.0, 20.0
+    y_down, y_up = -20.0, 20.0
+    
+    # Time parameters
+    dt = 0.05
+    steps = 300
+
+    # Initialize Grid
+    x, y, X, Y = init_grid_2d(dx, x_left, x_right, y_down, y_up)
+
+    # 2. Wave Packet Parameters
+    x0, y0 = -10.0, 0.0  # Start on the left, centered vertically
+    sigma = 2.0
+    kx, ky = 2.0, 0.0    # Momentum purely in the +x direction
+
+    # Initialize Particle
+    psi = init_moving_gaussian_2d(X, Y, x0, y0, sigma, kx, ky)
+    
+    # Save initial probability density for plotting
+    prob_density_initial = np.abs(psi)**2
+
+    # 3. Initialize Potential (Free Particle)
+    # V(x,y) = 0 everywhere
+    V_2d = np.zeros_like(X)
+
+    # 4. Precompute ADI Matrices
+    # Calculate the main diagonals
+    a_x_2d = compute_a_x(dx, dt, V_2d)
+    b_x_2d = compute_b_x(dx, dt, V_2d)
+    a_y_2d = compute_a_y(dx, dt, V_2d) # dy = dx 
+    b_y_2d = compute_b_y(dx, dt, V_2d)
+
+    # Construct the 3D banded matrix arrays
+    A_x = compute_matrices_A_x(a_x_2d)
+    B_x = compute_matrices_B_x(b_x_2d)
+    A_y = compute_matrices_A_y(a_y_2d)
+    B_y = compute_matrices_B_y(b_y_2d)
+
+    # 5. Time Evolution Loop
+    print(f"Evolving wave packet for {steps} steps (Total Time = {steps*dt:.2f})...")
+    for step in range(steps):
+        psi = step_adi_2d(psi, A_x, B_x, A_y, B_y)
+        print(step,'/',steps,'done',end='\r',flush=True)
+        
+    # Calculate final probability density
+    prob_density_final = np.abs(psi)**2
+    print("Evolution complete.")
+
+    # 6. Plotting Results
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    extent = [x_left, x_right, y_down, y_up]
+
+    # Plot Initial State
+    im0 = axes[0].imshow(prob_density_initial, extent=extent, origin='lower', cmap='inferno')
+    axes[0].set_title("Initial $|\psi(x,y,0)|^2$")
+    axes[0].set_xlabel("x")
+    axes[0].set_ylabel("y")
+    fig.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
+
+    # Plot Final State
+    im1 = axes[1].imshow(prob_density_final, extent=extent, origin='lower', cmap='inferno')
+    axes[1].set_title(f"Final $|\psi(x,y,T)|^2$ (T = {steps*dt:.2f})")
+    axes[1].set_xlabel("x")
+    axes[1].set_ylabel("y")
+    fig.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)
+
+    plt.tight_layout()
+    plt.show()
+
+def psi_to_phi_2d(x, y, psi):
+    """
+    Converts 2D position wave function psi(x,y) to momentum wave function phi(k_x,k_y).
+    """
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
+    Ny, Nx = psi.shape
+    
+    # Generate 1D frequency arrays and shift them
+    kx = np.fft.fftshift(np.fft.fftfreq(Nx, d=dx)) * 2 * np.pi
+    ky = np.fft.fftshift(np.fft.fftfreq(Ny, d=dy)) * 2 * np.pi
+    
+    # Create 2D momentum grids
+    KX, KY = np.meshgrid(kx, ky)
+    
+    # Compute the 2D discrete Fourier transform
+    phi_unshifted = np.fft.fft2(psi) * dx * dy / (2 * np.pi)
+    
+    # Shift array and apply phase correction for the grid's starting offset
+    phi = np.fft.fftshift(phi_unshifted) * np.exp(-1j * (KX * x[0] + KY * y[0]))
+    
+    return kx, ky, KX, KY, phi
+
+def simulate_2D(
+    V_func, psi_0_func, dx, dt, x_left, x_right, y_down, y_up, 
+    frames=100, method="ADI", show_animation=True, output_format='widget'
+    ):
+    """
+    Simulates the 2D TDSE and returns an animation/history.
+    """
+    # 1. Initialize grid and potentials
+    x, y, X, Y = init_grid_2d(dx, x_left, x_right, y_down, y_up)
+    psi_initial = psi_0_func(X, Y)
+    V_2d = V_func(X, Y)
+    
+    # 2. Precompute matrices for ADI
+    if method == "ADI":
+        A_x = compute_matrices_A_x(compute_a_x(dx, dt, V_2d))
+        B_x = compute_matrices_B_x(compute_b_x(dx, dt, V_2d))
+        A_y = compute_matrices_A_y(compute_a_y(dx, dt, V_2d))
+        B_y = compute_matrices_B_y(compute_b_y(dx, dt, V_2d))
+    else:
+        raise ValueError(f"Method '{method}' is not implemented for 2D.")
+
+    psi_curr = psi_initial.copy()
+
+    # 3. Metrics Helper Function
+    def get_metrics_2d(psi, phi, KX, KY, dkx, dky):
+        norm_x = np.sum(np.abs(psi)**2) * dx * dx # assuming dy=dx
+        norm_k = np.sum(np.abs(phi)**2) * dkx * dky
+        exp_x = np.sum(X * np.abs(psi)**2) * dx * dx
+        exp_y = np.sum(Y * np.abs(psi)**2) * dx * dx
+        exp_px = np.sum(KX * np.abs(phi)**2) * dkx * dky
+        exp_py = np.sum(KY * np.abs(phi)**2) * dkx * dky
+        # Expected Hamiltonian (Kinetic + Potential)
+        exp_H = np.sum(0.5 * (KX**2 + KY**2) * np.abs(phi)**2) * dkx * dky + \
+                np.sum(V_2d * np.abs(psi)**2) * dx * dx
+        
+        return norm_x, norm_k, exp_x, exp_y, exp_px, exp_py, exp_H
+
+    # Calculate initial momentum space and metrics
+    kx, ky, KX, KY, phi_init = psi_to_phi_2d(x, y, psi_curr)
+    dkx, dky = kx[1] - kx[0], ky[1] - ky[0]
+    
+    n_x_0, n_k_0, e_x_0, e_y_0, e_px_0, e_py_0, e_H_0 = get_metrics_2d(psi_curr, phi_init, KX, KY, dkx, dky)
+
+    # 4. Setup Figure and Axes for Animation
+    fig = plt.figure(figsize=(10, 10))
+    ((ax1, ax2), (ax3, ax4)) = fig.subplots(2, 2)
+    
+    extent_r = [x_left, x_right, y_down, y_up]
+    extent_k = [kx[0], kx[-1], ky[0], ky[-1]]
+
+    if show_animation:
+        # Setup ax1 (Position Space)
+        im_psi = ax1.imshow(np.abs(psi_curr)**2, extent=extent_r, origin='lower', cmap='inferno', vmin=0)
+        ax1.set_title(r"Position Space $|\psi(x,y)|^2$")
+        ax1.set_xlabel("x")
+        ax1.set_ylabel("y")
+        fig.colorbar(im_psi, ax=ax1, fraction=0.046, pad=0.04)
+
+        # Setup ax2 (Potential Energy)
+        im_V = ax2.imshow(V_2d, extent=extent_r, origin='lower', cmap='viridis')
+        ax2.contour(X, Y, V_2d, colors='white', alpha=0.3, levels=10)
+        ax2.set_title(r"Potential Energy $V(x,y)$")
+        ax2.set_xlabel("x")
+        ax2.set_ylabel("y")
+        fig.colorbar(im_V, ax=ax2, fraction=0.046, pad=0.04)
+
+        # Setup ax3 (Momentum Space)
+        im_phi = ax3.imshow(np.abs(phi_init)**2, extent=extent_k, origin='lower', cmap='magma', vmin=0)
+        ax3.set_title(r"Momentum Space $|\phi(k_x, k_y)|^2$")
+        ax3.set_xlabel("$k_x$")
+        ax3.set_ylabel("$k_y$")
+        
+        # Determine bounds for momentum plot zoom
+        k_bound = max(abs(e_px_0), abs(e_py_0)) + 4.0 
+        ax3.set_xlim(-k_bound, k_bound)
+        ax3.set_ylim(-k_bound, k_bound)
+        fig.colorbar(im_phi, ax=ax3, fraction=0.046, pad=0.04)
+
+        # Setup ax4 (Bar Chart for Invariants)
+        bar_labels = [r'$\int |\psi|^2$', r'$\int |\phi|^2$', r'$\langle H \rangle$']
+        bars = ax4.bar(bar_labels, [0, 0, 0], color=['blue', 'orange', 'green'])
+        ax4.set_ylim(-1, 1) 
+        ax4.set_ylabel("% Change")
+        ax4.yaxis.set_label_position('right')
+        ax4.yaxis.tick_right()
+        ax4.grid(axis='y', alpha=0.3)
+
+    # 5. Computation and Update Step
+    def animate(frame):
+        nonlocal psi_curr
+
+        print(frame,'/',frames,'done\r',end='',flush=True)
+        
+        # Advance Step
+        if frame > 0:
+            if method=="ADI":
+                psi_curr = step_adi_2d(psi_curr, A_x, B_x, A_y, B_y)
+        
+        # Get momentum space & metrics
+        _, _, _, _, phi_curr = psi_to_phi_2d(x, y, psi_curr)
+        n_x, n_k, e_x, e_y, e_px, e_py, e_H = get_metrics_2d(psi_curr, phi_curr, KX, KY, dkx, dky)
+        
+        if show_animation:
+            # Update Image data
+            prob_density_x = np.abs(psi_curr)**2
+            prob_density_k = np.abs(phi_curr)**2
+            im_psi.set_data(prob_density_x)
+            im_phi.set_data(prob_density_k)
+            
+            # Dynamically adjust color bounds for dispersing wavepackets
+            im_psi.set_clim(vmax=np.max(prob_density_x) or 1.0)
+            im_phi.set_clim(vmax=np.max(prob_density_k) or 1.0)
+            
+            # Update bar chart
+            pct_n_x = (n_x - n_x_0) / n_x_0 * 100
+            pct_n_k = (n_k - n_k_0) / n_k_0 * 100
+            pct_H = (e_H - e_H_0) / e_H_0 * 100 if e_H_0 != 0 else 0
+            pct_changes = [pct_n_x, pct_n_k, pct_H]
+            
+            for bar, h in zip(bars, pct_changes):
+                bar.set_height(h)
+                
+            max_abs = max(np.abs(pct_changes))
+            if max_abs > ax4.get_ylim()[1] or max_abs == 0:
+                scale = max_abs * 1.5 if max_abs > 0 else 1.0
+                ax4.set_ylim(-scale, scale)
+                
+            fig.suptitle(f"Frame: {frame} | $\\langle x \\rangle$: {e_x:.2f} | $\\langle y \\rangle$: {e_y:.2f}", fontsize=12)
+            
+            return [im_psi, im_phi] + list(bars)
+
+    # 6. Execute Simulation
+    anim_widget = None
+    ani = None
+    if show_animation:
+        print(f"\nSimulation started (with animation) for {frames} frames!")
+        ani = FuncAnimation(fig, animate, frames=frames, interval=50, blit=True)
+        if output_format == 'widget':
+            plt.close(fig)
+            anim_widget = HTML(ani.to_jshtml())
+        elif output_format == 'video':
+            plt.close(fig)
+            anim_widget = HTML(ani.to_html5_video())
+    else:
+        print(f"\nRunning fast simulation (no animation) for {frames} frames...")
+        for frame in range(frames):
+            print(f"\rProcessing frame {frame + 1}/{frames}...", end="", flush=True)
+            animate(frame)
+        print("Done!")
+
+    return {
+        'animation': anim_widget,
+        'raw_ani': ani if show_animation else None,
+        'final_psi': psi_curr,
+        'X_grid': X,
+        'Y_grid': Y
+    }
+
+def test_2D():
+    """
+    Tests the 2D ADI Time-Dependent Schrodinger Equation solver using the simulate_2D pipeline.
+    Simulates a free particle (V=0) moving in the +x direction.
+    Generates an animation and saves static plots.
+    """
+    # 1. Wrapper functions for initial state and potential
+    def initial_packet(X, Y):
+        sigma = 2.0
+        x0 = -10.0
+        y0 = 0.0
+        kx = 2.0
+        ky = 0.0
+        return init_moving_gaussian_2d(X, Y, x0, y0, sigma, kx, ky)
+
+    def free_potential(X, Y):
+        # V(x,y) = 0 everywhere
+        return np.zeros_like(X)
+
+    # 2. Run the 2D Simulation
+    print("Initializing 2D Simulation...")
+    res = simulate_2D(
+        V_func=free_potential,
+        psi_0_func=initial_packet,
+        dx=0.5,
+        dt=0.05,
+        x_left=-20.0,
+        x_right=20.0,
+        y_down=-20.0,
+        y_up=20.0,
+        frames=150,               # Reduced slightly from 300 for faster GIF generation
+        method="ADI",
+        show_animation=True,
+        output_format='save'      # Skip the HTML widget, we will save the raw animation
+    )
+
+    # 3. Save the Animation
+    if res['raw_ani'] is not None:
+        writer = PillowWriter(fps=20)
+        res['raw_ani'].save("free_particle_2d.gif", writer=writer)
+        print("GIF saved successfully as 'free_particle_2d.gif'!")
+
+    # 4. Generate and Save the Static Figure (Initial vs Final Position Space)
+    print("Generating static summary figure...")
+    X = res['X_grid']
+    Y = res['Y_grid']
+    extent = [X.min(), X.max(), Y.min(), Y.max()]
+    
+    # Re-evaluate initial state for the static plot
+    psi_init = initial_packet(X, Y)
+    final_psi = res['final_psi']
+
+    fig_static, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # Plot Initial State
+    im0 = axes[0].imshow(np.abs(psi_init)**2, extent=extent, origin='lower', cmap='inferno')
+    axes[0].set_title("Initial $|\psi(x,y,0)|^2$")
+    axes[0].set_xlabel("x")
+    axes[0].set_ylabel("y")
+    fig_static.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
+
+    # Plot Final State
+    im1 = axes[1].imshow(np.abs(final_psi)**2, extent=extent, origin='lower', cmap='inferno')
+    axes[1].set_title("Final $|\psi(x,y,T)|^2$")
+    axes[1].set_xlabel("x")
+    axes[1].set_ylabel("y")
+    fig_static.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)
+
+    plt.tight_layout()
+    fig_static.savefig("static_results_2d.png", dpi=300, bbox_inches='tight')
+    print("Saved static plot as 'static_results_2d.png'")
+
+    plt.show()
+
+if __name__ == "__main__":
+    test_2D()
