@@ -199,7 +199,7 @@ def phi_to_psi(k, phi, x):
     
     return psi
 
-def update_psi(psi, A_banded, B_banded, method="split-operator"):
+def update_psi(psi, A_banded, B_banded, method="split-operator", dt=0.01):
     """
     Advances the wave function by a single time step.
     Currently supports the implicit split-operator method via Crank-Nicolson.
@@ -213,12 +213,15 @@ def update_psi(psi, A_banded, B_banded, method="split-operator"):
         psi_next = solve_banded((1, 1), A_banded, RHS)
         
         return psi_next
+    elif method == "SDLF":
+        return step_sdlf(psi, A_banded, dt)
     else:
         raise ValueError(f"Method '{method}' is not implemented.")
 
 def simulate_1D(
     V_func, psi_0_func, dx, dt, x_left, x_right, frames=100, methods=["split-operator"],
-    F_func=None, x0_classical=None, p0_classical=None, show_animation=True, output_format='widget'
+    F_func=None, x0_classical=None, p0_classical=None, show_animation=True, output_format='widget',
+    animation_frame_scaling=1
     ):
     """
     Simulates the TDSE and returns a dictionary with history metrics and figures.
@@ -237,6 +240,12 @@ def simulate_1D(
                 'A': compute_matrix_A_compact(a_x),
                 'B': compute_matrix_B_compact(b_x),
                 'psi': psi_initial.copy()
+            }
+        elif method == "SDLF":
+            matrices[method] = {
+                "A":compute_F_matrix_compact(dx, V_x),
+                "B":None,
+                'psi':psi_initial.copy()
             }
 
     # --- UPDATED: Metrics Helper Function ---
@@ -257,11 +266,13 @@ def simulate_1D(
     k_init, phi_init = psi_to_phi(x, matrices[primary_method]['psi'])
     norm_x_0, norm_k_0, exp_x_0, exp_p_0, exp_H_0, x_p_0, k_p_0 = get_metrics(matrices[primary_method]['psi'], phi_init, k_init, x)
 
+    steps = frames * animation_frame_scaling
+
     # --- NEW: History and Classical Init ---
     history = {
-        't': np.zeros(frames), 'norm_x': np.zeros(frames), 'norm_k': np.zeros(frames),
-        'exp_x': np.zeros(frames), 'exp_p': np.zeros(frames), 'exp_H': np.zeros(frames),
-        'x_p': np.zeros(frames), 'k_p': np.zeros(frames), 'x_c': np.zeros(frames)
+        't': np.zeros(steps), 'norm_x': np.zeros(steps), 'norm_k': np.zeros(steps),
+        'exp_x': np.zeros(steps), 'exp_p': np.zeros(steps), 'exp_H': np.zeros(steps),
+        'x_p': np.zeros(steps), 'k_p': np.zeros(steps), 'x_c': np.zeros(steps)
     }
     
     classical_state = {
@@ -330,7 +341,9 @@ def simulate_1D(
         # 1. Advance Quantum Time Step
         if frame > 0:
             for method in methods:
-                matrices[method]['psi'] = update_psi(matrices[method]['psi'], matrices[method]['A'], matrices[method]['B'], method=method)
+                matrices[method]['psi'] = update_psi(
+                    matrices[method]['psi'], matrices[method]['A'], matrices[method]['B'], 
+                    dt=dt, method=method)
         
         psi_curr = matrices[primary_method]['psi']
         k_curr, phi_curr = psi_to_phi(x, psi_curr)
@@ -362,7 +375,8 @@ def simulate_1D(
 
     def animate(frame):
         print(f"\rProcessing frame {frame + 1}/{frames}...", end="", flush=True)
-        psi_curr, phi_curr, n_x, n_k, e_x, e_p, e_H, x_p, k_p = compute_step(frame)
+        for step in range(animation_frame_scaling-1):compute_step(frame*animation_frame_scaling + step)
+        psi_curr, phi_curr, n_x, n_k, e_x, e_p, e_H, x_p, k_p = compute_step((frame+1)*animation_frame_scaling -1)
         
         # Update plotting data
         for method in methods:
@@ -406,7 +420,8 @@ def simulate_1D(
     else:
         print("\nRunning fast simulation (no animation)...")
         for frame in range(frames):
-            compute_step(frame)
+            for step in range(animation_frame_scaling):
+                compute_step(frame*animation_frame_scaling + step)
         print("Done!")
 
     # Return Output Dictionary
@@ -456,12 +471,13 @@ def test_1D():
         V_func=harmonic_potential, 
         F_func=harmonic_force,     # <--- Passes the Force to enable classical tracking
         psi_0_func=initial_packet, 
-        dx=0.05, 
-        dt=0.01, 
+        dx=0.1, 
+        dt=0.005, 
         x_left=-10.0, 
         x_right=10.0, 
-        frames=300, 
-        methods=["split-operator"],
+        frames=500, 
+        # methods=["split-operator"],
+        methods=["SDLF","split-operator"],
         show_animation=True,
         output_format='save'       # Avoids compiling the heavy JS widget in terminal
     )
@@ -477,6 +493,54 @@ def test_1D():
     print("Saved static plot as 'static_results.png'")
 
     plt.close('all')
+
+def compute_F_matrix_compact(dx, V_x):
+    """
+    Constructs the spatial finite-difference matrix F in a 3xN compact banded format.
+    F = -H, where H is the Hamiltonian in Atomic Units.
+    """
+    N = len(V_x)
+    F = np.zeros((3, N), dtype=float)
+    
+    # Middle row (index 1): Main diagonal = -2 * (1 + V_x * dx^2)
+    F[1, :] = -2.0 * (1.0 + V_x * dx**2)
+    
+    # Top row (index 0): Upper diagonal (shifted for scipy/banded convention)
+    F[0, 1:] = 1.0
+    
+    # Bottom row (index 2): Lower diagonal (shifted for scipy/banded convention)
+    F[2, :-1] = 1.0
+    
+    # Scale entire matrix by 1 / (2 * dx^2)
+    F *= 1.0 / (2.0 * dx**2)
+    
+    return F
+
+def step_sdlf(psi, F_banded, dt):
+    """
+    Advances the wave function by one time step 'dt' using the 
+    Space Discretised Leap Frog (Position-Verlet) method.
+    Assumes `multiply_B_psi` is available in the global scope.
+    """
+    R = np.real(psi)
+    I = np.imag(psi)
+    
+    # Step 1: Advance Imaginary part by half a step
+    # dI/dt = F * R
+    F_R = multiply_B_psi(F_banded, R)
+    I_half = I + (dt / 2.0) * F_R
+    
+    # Step 2: Advance Real part by a full step using the half-step Imaginary part
+    # dR/dt = -F * I
+    F_I_half = multiply_B_psi(F_banded, I_half)
+    R_next = R - dt * F_I_half
+    
+    # Step 3: Advance Imaginary part by the remaining half step using the new Real part
+    F_R_next = multiply_B_psi(F_banded, R_next)
+    I_next = I_half + (dt / 2.0) * F_R_next
+    
+    # Combine back into complex wave function
+    return R_next + 1j * I_next
 
 
 #####################################################################################
@@ -1060,4 +1124,4 @@ def test_2D():
     fig_static.savefig("static_results_2d.png", dpi=300, bbox_inches='tight')
     print("Saved static plot as 'static_results_2d.png'")
 
-if __name__ == "__main__": test_2D()
+if __name__ == "__main__": test_1D()

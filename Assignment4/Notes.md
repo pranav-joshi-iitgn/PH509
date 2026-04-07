@@ -456,3 +456,203 @@ $$
 Using this, tri-diagonal matrices $A,B$ will be created, allowing us to do the implicit split-operator step by solving $A\psi_{\tilde t} = B \psi_0$ in $O(N)$ operations using `scipy`.
 
 For further accuracy, we can even go to a penta-diagonal matrix, using 5-point evaluation of the $\frac{\partial^2}{\partial x^2}$ operator. 
+
+## Leap-Frog like finite difference method
+
+The ATDSE is :
+
+$$
+- \frac{1}{2}\frac{\partial^2}{\partial \tilde  x^2} \psi + \tilde  V \psi= \tilde H \psi = i\frac{\partial }{\partial \tilde t}\psi
+$$
+
+Since the $\tilde H$ operator can be decomposed lineraly and maps real numbers to real numbers, we can write (after dropping the tilde) :
+
+$$
+\psi = R + iI \implies \\
+H R + i H I= i \frac{\partial }{\partial t} R - \frac{\partial }{\partial t} I \implies \\
+\frac{\partial}{\partial t} I  = H R \quad \text{and} \quad \frac{\partial}{\partial t} R = - H I
+$$
+
+On top of this, we have
+
+$$
+\int (I^2 + R^2) dx = 1
+$$
+
+When descritised, this equation becomes
+
+$$
+\sum_x (I_x^2 + R_x^2) = 1
+$$
+
+Similarly, the evolution equations are discretised in space as :
+
+$$
+\frac{\partial}{\partial t} I[x] = V[x]R[x] - \frac{1}{2}\frac{1}{\Delta x^2} (R[x+\Delta x]-2R[x]+R[x-\Delta x]) \\
+\frac{\partial}{\partial t} R[x] = -V[x]I[x] + \frac{1}{2}\frac{1}{\Delta x^2} (I[x+\Delta x]-2I[x]+I[x-\Delta x])
+$$
+
+We can rewrite the first equation as :
+
+$$
+\frac{\partial}{\partial t} I[x] = - \frac{1}{2\Delta x^2} 
+\begin{bmatrix}
+1 & -2(1 + V[x]\Delta x^2) & 1
+\end{bmatrix}
+\begin{bmatrix}
+R[x+\Delta x] \\
+R[x] \\
+R[x-\Delta x]
+\end{bmatrix}
+$$
+
+Define $f[x] = -2(1+V[x]\Delta x^2)$ and then the tri-diagonal matrix
+
+$$
+F = \frac{1}{2\Delta x^2}\begin{bmatrix}
+f[x_l] & 1 & 0 & 0 & \dots & 0 & 0  \\
+1 & f[x_l + \Delta x] & 1 & 0 & \dots & 0 & 0 \\
+0 & 1 & f[x_l + 2\Delta x] & 1 & \dots & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & & \vdots & \vdots \\
+0 & 0 & 0  & 0 & \dots & 1 & f[x_r]
+\end{bmatrix}
+$$
+
+Now, vectorising this, with $\vec R = [R_x]_x$ and $\vec I = [I_x]_x$, we can write :
+
+$$
+\frac{\partial}{\partial t}\vec R = F \vec I\\
+\frac{\partial}{\partial t}\vec I = - F \vec R \\
+||\vec R||^2 + ||\vec I||^2 = 1
+$$
+
+This is exactly how the hamiltonian systems we have seen evolve. The third equation is similar to the net energy being constant in a classical mechanics system.
+
+So, just like before, we can use the position verlet LF integrator like so (for small step of size $t$):
+
+$$
+\vec R_{t/2} := \vec R_0 + \frac{t}{2} F \vec I_0 \\
+\vec I_{t} := \vec I_0 - t F \vec R_{t/2} \\
+\vec R_t := \vec R_{t/2} + \frac{t}{2} F\vec R_{t/2} 
+$$
+
+Effectively what is happening is that
+
+$$
+\begin{bmatrix}
+\vec R_{t/2} \\
+\vec I_{t/2}
+\end{bmatrix} = 
+\begin{bmatrix}
+\textbf{I}_N & \frac{t}{2} \textbf{F}\\
+\textbf{0}_N & \textbf{I}_N
+\end{bmatrix}
+\begin{bmatrix}
+\vec R_{0} \\
+\vec I_{0}
+\end{bmatrix} \\
+
+\begin{bmatrix}
+\vec R_{t} \\
+\vec I_{t}
+\end{bmatrix} = 
+\begin{bmatrix}
+\textbf{I}_N & \textbf{0}_N \\ 
+- \frac{t}{2} \textbf{F}  & \textbf{I}_N
+\end{bmatrix}
+\begin{bmatrix}
+\vec R_{t/2} \\
+\vec I_{t/2}
+\end{bmatrix}
+$$
+
+It's easy to show that both the matrices have a determinant of 1. Thus, the L2 norm is exactly preserved. 
+
+But that isn't enough for stability. Instead, for von Neuman or BIBO stability, we require :
+
+$$
+t < \Lambda \Delta x^2
+$$
+
+Here, $\Lambda$ is a quantity dependent on $V(x)$. For free fall, i.e. $V(x)=0$, we have $\Lambda =1$ . For most other potentials we will encounter, we will have $\Lambda \ge 1/2$ . 
+
+Thus, as long as $t \ll \frac{1}{2}\Delta x^2$, the simulation will give stable outputs. 
+
+Obviously, we won't do the iteration for just the $[0,t]$ interval in time, but rather till $T = t\times N_f$ where $N_f$ is number of frames. 
+
+The time complexity using either band-matrix multiplication of vector dot products after slicing and padding is $O(NN_f)$.
+If $N_f \gg N$, we can optimise by doing fast matrix exponentiation of the matrix
+
+$$
+M := 
+\begin{bmatrix}
+\textbf{I}_N & \textbf{0}_N \\ 
+- \frac{t}{2} \textbf{F}  & \textbf{I}_N
+\end{bmatrix}
+\begin{bmatrix}
+\textbf{I}_N & \frac{t}{2} \textbf{F}\\
+\textbf{0}_N & \textbf{I}_N
+\end{bmatrix}
+$$
+
+to get $M^{N_f}$ in $O(N^3 \log N_f)$ time. 
+For example, if we have $(x_l,x_r) = -10,10$ and $\Delta x = 0.1$, giving us $N = 201$, but have $t = 0.001 < \frac{1}{2}\Delta x^2$ and we evolve till $T_1=1$, giving us $N_f = 1000$. It may seem that $N^3 \gg N N_f$ and so this is a waste of time, but pre-computing $M^{N_f}$ and repeatedly using it allows us to speed up the simulation by computing effect of $N_f$ iterations via just $O(N^2)$ operations, rather than $O(NN_f)$. So, if the simulation has to be done for a longer time, say $T=1000$, we can just use the matrix for $T=10$ and use that to do 100 of 160000-operation matrix-vector multiplications, rather than doing $2\times 3 \times 201000000$ operations. 
+
+This also allows us to make the $t$ value really small. 
+
+Eventually, there will come a point when
+
+$$
+M^{T/t} = (I+ \frac{t}{T}(\frac{M-\textbf{I}_n}{t/T}))^{T/t} \approx \exp(\frac{T}{t}(M-\textbf{I}_n))
+$$
+
+This quantity can be computed using `scipy.linalg.expm` in $O(N^3)$ and is basically the space discretised analogue of the $e^{-iHt}$ operator. Notice I said "space discretised". In the time dimension, it's effectively the solution to the equation
+
+$$
+\frac{\partial}{\partial t} \begin{bmatrix}
+\vec R \\
+\vec I
+\end{bmatrix} = \begin{bmatrix}
+0 & F \\
+-F & 0
+\end{bmatrix} \begin{bmatrix}
+\vec R \\
+\vec I
+\end{bmatrix}
+$$
+
+i.e.
+
+$$
+\begin{bmatrix}
+\vec R \\
+\vec I
+\end{bmatrix}(T) = \exp(T G) (\begin{bmatrix}
+\vec R \\
+\vec I
+\end{bmatrix}(0)) \\
+\text{where}\quad  G = \begin{bmatrix}
+0 & F \\
+-F & 0
+\end{bmatrix}
+$$
+
+It can be shown that as $t\to 0$, the $\frac{T}{t}(M-I)$ matrix become $G$.
+This then raises the obvious question : why bother with leap-frog at all where we can get the time-analytical solution for the space discretised scenario directly ? 
+
+Since this has become a very different method from space-discretised leap-frog (SDLP) after all the optimisations and analysis, I will give it a new name: the "Real-Imaginary Split Evolution" (RISE) method. 
+
+The algorithm for RISE given $\Delta x, \Delta t$ where $\Delta t$ is large, and $\psi_0, V$ is :
+
+* Compute $f[x]$ from $V[x],\Delta x, \Delta t$
+* Compute $F$ and $G$ matrices
+* Compute the transition matrix $P = \exp(G\Delta t)$
+* Initialise $R = \Re (\psi_0)$ and $I = \Im(\psi_0)$
+* for each frame:
+    * Compute any quantities from $\psi = R + iI$ that are to be tracked (such as $\braket{x},\braket{p},\braket{E}, \phi$, etc.)
+    * Update $R,I$ as $[R\;I]^T := P[R\;I]^T$
+
+Although this method gives analytically correct time evolution, the $O(N^3)$ bottleneck means that the spatial resolution is poor for 2D and 3D cases, and thus the solution will also be in-accurate.
+Thus, this method isn't used professionally. 
+
+But, for the toy examples we have, I can certainly use it to verify correctness. 
