@@ -472,10 +472,11 @@ def test_1D():
         F_func=harmonic_force,     # <--- Passes the Force to enable classical tracking
         psi_0_func=initial_packet, 
         dx=0.1, 
-        dt=0.005, 
+        dt=0.001, 
         x_left=-10.0, 
         x_right=10.0, 
-        frames=500, 
+        frames=100,
+        animation_frame_scaling=200,
         # methods=["split-operator"],
         methods=["SDLF","split-operator"],
         show_animation=True,
@@ -483,7 +484,7 @@ def test_1D():
     )
 
     if res['raw_ani'] is not None:
-        writer = PillowWriter(fps=20)
+        writer = PillowWriter(fps=10)
         res['raw_ani'].save("harmonic_simulation.gif", writer=writer)
         print("\nGIF saved successfully!")
 
@@ -594,6 +595,13 @@ def step_potential_2d(X, Y, step_pos_x=0.0, v_left=0.0, v_right=1.0):
     (Can be easily modified to step along y or an arbitrary line).
     """
     return np.where(X < step_pos_x, v_left, v_right)
+
+def disk_potential_2d(X, Y, R=1.5, center_x=0.0, center_y=0.0, v_out=0.0, v_in=1.0):
+    """
+    Returns a 2D disk potential with radius R 
+    """
+    return np.where(((X-center_x)**2 + (Y-center_y)**2) < R**2, v_out, v_in)
+
 
 def harmonic_potential_2d(X, Y, omega_x=1.0, omega_y=1.0):
     """Returns a 2D harmonic oscillator potential."""
@@ -840,9 +848,57 @@ def psi_to_phi_2d(x, y, psi):
     
     return kx, ky, KX, KY, phi
 
+def compute_P_theta(psi, X, Y, dx, r_m, delta_r, theta_array, delta_theta):
+    """
+    Evaluates the angular probability distribution P(theta) within a specified radial band.
+    
+    Parameters:
+    - psi: 2D array of the wave function.
+    - X, Y: 2D meshgrid arrays of spatial coordinates.
+    - dx: Spatial step size (assumes dx = dy).
+    - r_m: Mean radius of the detection band.
+    - delta_r: Half-width of the radial band.
+    - theta_array: 1D array of angles (in radians) at which to evaluate P(theta).
+    - delta_theta: Half-width of the angular sector for integration.
+    
+    Returns:
+    - P_theta: 1D array of probabilities matching the shape of theta_array.
+    """
+    # 1. Convert Cartesian mesh to Polar mesh
+    R = np.sqrt(X**2 + Y**2)
+    Theta = np.arctan2(Y, X) # Angles in the range [-pi, pi]
+    
+    # 2. Probability density multiplied by Cartesian area element (dx * dy)
+    # This is equivalent to integrating with r * dr * dtheta in polar coordinates
+    prob_density_area = np.abs(psi)**2 * (dx**2)
+    
+    # 3. Pre-compute the radial mask (this is constant for all angles)
+    r_mask = (R >= r_m - delta_r) & (R <= r_m + delta_r)
+    
+    P_theta = np.zeros_like(theta_array, dtype=float)
+    
+    # 4. Sweep over target angles and integrate
+    for i, target_theta in enumerate(theta_array):
+        
+        # Calculate shortest angular distance to handle -pi/pi wrap-around
+        dTheta = Theta - target_theta
+        dTheta = (dTheta + np.pi) % (2 * np.pi) - np.pi
+        
+        # Create angular mask for the current sector
+        theta_mask = np.abs(dTheta) <= delta_theta
+        
+        # Combine masks to find grid points in the target region
+        combined_mask = r_mask & theta_mask
+        
+        # Sum the probability area elements to approximate the integral
+        P_theta[i] = np.sum(prob_density_area[combined_mask])
+        
+    return P_theta
+
 def simulate_2D(
     V_func, psi_0_func, dx, dt, x_left, x_right, y_down, y_up, 
-    frames=100, method="ADI", show_animation=True, output_format='widget'
+    frames=100, method="ADI", show_animation=True, output_format='widget',
+    animation_frame_scaling=1,
     ):
     """
     Simulates the 2D TDSE and returns an animation/history.
@@ -891,15 +947,16 @@ def simulate_2D(
     
     n_x_0, n_k_0, e_x_0, e_y_0, e_px_0, e_py_0, e_H_0, x_p_0, y_p_0, kx_p_0, ky_p_0 = get_metrics_2d(psi_curr, phi_init, KX, KY, dkx, dky)
 
-    # NEW: History Dictionary
+    # History Dictionary
+    steps = frames*animation_frame_scaling
     history = {
-        't': np.zeros(frames),
-        'norm_x': np.zeros(frames), 'norm_k': np.zeros(frames),
-        'exp_x': np.zeros(frames), 'exp_y': np.zeros(frames),
-        'exp_px': np.zeros(frames), 'exp_py': np.zeros(frames),
-        'exp_H': np.zeros(frames),
-        'x_p': np.zeros(frames), 'y_p': np.zeros(frames),
-        'kx_p': np.zeros(frames), 'ky_p': np.zeros(frames)
+        't': np.zeros(steps),
+        'norm_x': np.zeros(steps), 'norm_k': np.zeros(steps),
+        'exp_x': np.zeros(steps), 'exp_y': np.zeros(steps),
+        'exp_px': np.zeros(steps), 'exp_py': np.zeros(steps),
+        'exp_H': np.zeros(steps),
+        'x_p': np.zeros(steps), 'y_p': np.zeros(steps),
+        'kx_p': np.zeros(steps), 'ky_p': np.zeros(steps)
     }
 
     # 4. Setup Figure and Axes for Animation
@@ -961,24 +1018,27 @@ def simulate_2D(
         
         print('doing frame',frame+1,'/',frames,end='\r',flush=True)
         
-        # Advance Step
-        if frame > 0:
-            if method == "ADI":
-                psi_curr = step_adi_2d(psi_curr, A_x, B_x, A_y, B_y)
-        
+        for step in range(animation_frame_scaling):
 
-        # Get momentum space & metrics
-        _, _, _, _, phi_curr = psi_to_phi_2d(x, y, psi_curr)
-        n_x, n_k, e_x, e_y, e_px, e_py, e_H, x_p, y_p, kx_p, ky_p = get_metrics_2d(psi_curr, phi_curr, KX, KY, dkx, dky)
-        
-        # Record into history
-        history['t'][frame] = frame * dt
-        history['norm_x'][frame], history['norm_k'][frame] = n_x, n_k
-        history['exp_x'][frame], history['exp_y'][frame] = e_x, e_y
-        history['exp_px'][frame], history['exp_py'][frame] = e_px, e_py
-        history['exp_H'][frame] = e_H
-        history['x_p'][frame], history['y_p'][frame] = x_p, y_p
-        history['kx_p'][frame], history['ky_p'][frame] = kx_p, ky_p
+            global_step = frame*animation_frame_scaling + step
+            # Advance Step
+            if global_step > 0:
+                    if method == "ADI":
+                        psi_curr = step_adi_2d(psi_curr, A_x, B_x, A_y, B_y)
+            
+
+            # Get momentum space & metrics
+            _, _, _, _, phi_curr = psi_to_phi_2d(x, y, psi_curr)
+            n_x, n_k, e_x, e_y, e_px, e_py, e_H, x_p, y_p, kx_p, ky_p = get_metrics_2d(psi_curr, phi_curr, KX, KY, dkx, dky)
+            
+            # Record into history
+            history['t'][global_step] = global_step * dt
+            history['norm_x'][global_step], history['norm_k'][global_step] = n_x, n_k
+            history['exp_x'][global_step], history['exp_y'][global_step] = e_x, e_y
+            history['exp_px'][global_step], history['exp_py'][global_step] = e_px, e_py
+            history['exp_H'][global_step] = e_H
+            history['x_p'][global_step], history['y_p'][global_step] = x_p, y_p
+            history['kx_p'][global_step], history['ky_p'][global_step] = kx_p, ky_p
 
         if show_animation:
             prob_density_x = np.abs(psi_curr)**2
@@ -1087,8 +1147,8 @@ def test_2D():
     Generates an animation and saves comprehensive static line plots of history.
     """
     def initial_packet(X, Y):
-        sigma = 2.0
-        x0 = -10.0
+        sigma = 1.0
+        x0 = -8.0
         y0 = 0.0
         kx = 2.0
         ky = 0.0
@@ -1097,24 +1157,28 @@ def test_2D():
     def free_potential(X, Y):
         return np.zeros_like(X)
 
+    def nucleus(X, Y):
+        return gaussian_potential_2d(X,Y,1,0,0)
+
     print("Initializing 2D Simulation...")
     res = simulate_2D(
-        V_func=free_potential,
+        V_func=disk_potential_2d,
         psi_0_func=initial_packet,
-        dx=0.5,
-        dt=0.05,
+        dx=0.1,
+        dt=0.003,
         x_left=-20.0,
         x_right=20.0,
         y_down=-20.0,
         y_up=20.0,
-        frames=500,               
+        frames=100,  
+        animation_frame_scaling=50,             
         method="ADI",
         show_animation=True,
         output_format='save'      
     )
 
     if res['raw_ani'] is not None:
-        writer = PillowWriter(fps=20)
+        writer = PillowWriter(fps=10)
         res['raw_ani'].save("free_particle_2d.gif", writer=writer)
         print("\nGIF saved successfully as 'free_particle_2d.gif'!")
 
@@ -1124,4 +1188,4 @@ def test_2D():
     fig_static.savefig("static_results_2d.png", dpi=300, bbox_inches='tight')
     print("Saved static plot as 'static_results_2d.png'")
 
-if __name__ == "__main__": test_1D()
+if __name__ == "__main__": test_2D()
