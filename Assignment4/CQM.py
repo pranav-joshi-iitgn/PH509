@@ -218,6 +218,21 @@ def update_psi(psi, A_banded, B_banded, method="split-operator", dt=0.01):
     else:
         raise ValueError(f"Method '{method}' is not implemented.")
 
+def init_gaussian_1d(x, x0=-3.0, sigma=0.7, k0=0.0):
+    """
+    Initializes a 1D Gaussian wave packet with initial momentum (k0).
+    """
+    # Normalization constant for 1D probability density
+    norm = 1.0 / (sigma * np.sqrt(np.pi))**0.5
+    
+    # Real Gaussian envelope
+    envelope = np.exp(-((x - x0)**2) / (2 * sigma**2))
+    
+    # Complex phase for initial momentum
+    phase = np.exp(1j * k0 * x)
+    
+    return norm * envelope * phase
+
 def simulate_1D(
     V_func, psi_0_func, dx, dt, x_left, x_right, frames=100, methods=["split-operator"],
     F_func=None, x0_classical=None, p0_classical=None, show_animation=True, output_format='widget',
@@ -268,7 +283,6 @@ def simulate_1D(
 
     steps = frames * animation_frame_scaling
 
-    # --- NEW: History and Classical Init ---
     history = {
         't': np.zeros(steps), 'norm_x': np.zeros(steps), 'norm_k': np.zeros(steps),
         'exp_x': np.zeros(steps), 'exp_p': np.zeros(steps), 'exp_H': np.zeros(steps),
@@ -291,11 +305,11 @@ def simulate_1D(
     lines_phi = {}
     
     for method in methods:
-        line_psi, = ax1.plot(x, np.abs(matrices[method]['psi'])**2, label=f"|$\psi$|² ({method})")
+        line_psi, = ax1.plot(x, np.abs(matrices[method]['psi'])**2, label=f"$|\psi|^2$ ({method})")
         lines_psi[method] = line_psi
         
         k, phi = psi_to_phi(x, matrices[method]['psi'])
-        line_phi, = ax3.plot(k, np.abs(phi)**2, label=f"|$\phi$|² ({method})")
+        line_phi, = ax3.plot(k, np.abs(phi)**2, label=f"$|\phi|^2$ ({method})")
         lines_phi[method] = line_phi
 
     if show_animation:
@@ -304,7 +318,8 @@ def simulate_1D(
         ax1.set_ylabel("Probability Density")
         ax1.set_ylim(0, np.max(np.abs(psi_initial)**2) * 1.5)
         vline_x = ax1.axvline(exp_x_0, color='purple', linestyle='--', label=r'$\langle x \rangle$')
-        vline_xp = ax1.axvline(x_p_0, color='red', linestyle=':', label=r'$x_p$') # <-- ADDED
+        vline_xp = ax1.axvline(x_p_0, color='red', linestyle=':', label=r'$x_p$')
+        vline_xc = ax1.axvline(classical_state['x'], color='green', linestyle='-', label=r'$x_c$')
         ax1.legend(loc="upper right")
         ax1.grid(True, alpha=0.3)
 
@@ -322,7 +337,8 @@ def simulate_1D(
         ax3.set_xlim(-15, 15)
         ax3.set_ylim(0, np.max(np.abs(phi_init)**2) * 1.5)
         vline_p = ax3.axvline(exp_p_0, color='purple', linestyle='--', label=r'$\langle p \rangle$')
-        vline_kp = ax3.axvline(k_p_0, color='red', linestyle=':', label=r'$k_p$') # <-- ADDED
+        vline_kp = ax3.axvline(k_p_0, color='red', linestyle=':', label=r'$k_p$')
+        vline_kc = ax3.axvline(classical_state['p'], color='green', linestyle='-', label=r'$p_c$')
         ax3.legend(loc="upper right")
         ax3.grid(True, alpha=0.3)
 
@@ -359,10 +375,9 @@ def simulate_1D(
             a_mid = F_func(x_mid)
             p_next = p_c + a_mid * dt
             x_next = x_mid + 0.5 * p_next * dt
-            
-            classical_state['x'] = x_next
-            classical_state['p'] = p_next
             x_c, p_c = x_next, p_next
+            classical_state['x'] = x_c
+            classical_state['p'] = p_c
 
         # 4. Log to History
         history['t'][frame] = frame * dt
@@ -371,12 +386,12 @@ def simulate_1D(
         history['x_p'][frame], history['k_p'][frame] = x_p, k_p
         history['x_c'][frame] = x_c
         
-        return psi_curr, phi_curr, n_x, n_k, e_x, e_p, e_H, x_p, k_p
+        return psi_curr, phi_curr, n_x, n_k, e_x, e_p, e_H, x_p, k_p, x_c, p_c
 
     def animate(frame):
         print(f"\rProcessing frame {frame + 1}/{frames}...", end="", flush=True)
         for step in range(animation_frame_scaling-1):compute_step(frame*animation_frame_scaling + step)
-        psi_curr, phi_curr, n_x, n_k, e_x, e_p, e_H, x_p, k_p = compute_step((frame+1)*animation_frame_scaling -1)
+        psi_curr, phi_curr, n_x, n_k, e_x, e_p, e_H, x_p, k_p, x_c, k_c = compute_step((frame+1)*animation_frame_scaling -1)
         
         # Update plotting data
         for method in methods:
@@ -386,8 +401,10 @@ def simulate_1D(
             
         vline_x.set_xdata([e_x, e_x])
         vline_xp.set_xdata([x_p, x_p])
+        vline_xc.set_xdata([x_c, x_c])
         vline_p.set_xdata([e_p, e_p])
         vline_kp.set_xdata([k_p, k_p])
+        vline_kc.set_xdata([k_c, k_c])
         
         # Update bar chart
         pct_n_x = (n_x - norm_x_0) / norm_x_0 * 100
@@ -433,30 +450,189 @@ def simulate_1D(
         'x_grid': x
     }
 
-def plot_static_results(history, F_func=None):
-    """Generates the static plots from a populated history dictionary."""
-    fig_static, (ax_s1, ax_s2) = plt.subplots(2, 1, figsize=(8, 8))
-    
-    # Trajectories
-    ax_s1.plot(history['t'], history['exp_x'], label=r'$\langle x \rangle$ (Quantum)', color='blue')
-    ax_s1.plot(history['t'], history['x_p'], label=r'$x_p$', color='green', linestyle='--')
-    if F_func is not None:
-        ax_s1.plot(history['t'], history['x_c'], label=r'$x_c$ (Classical)', color='red', linestyle='-.')
-    ax_s1.set_title("Position Trajectories over Time")
-    ax_s1.set_xlabel("Time (t)")
-    ax_s1.set_ylabel("Position (x)")
-    ax_s1.legend()
-    ax_s1.grid(True, alpha=0.3)
+def plot_static_results(history, condition="", 
+    axes=None, fig_static=None, F_func=None, 
+    final=False, most_prob=True, log_scale=False):
+    """
+    Generates or overlays the static plots from a populated history dictionary 
+    onto an existing figure and axes matrix (3x2).
+    """
+    if axes is None or fig_static is None:
+        fig_static, axes = plt.subplots(3, 2, figsize=(10, 12), sharex=False)
+        plt.delaxes(axes[2][1]) # Remove the bottom-right empty plot
 
-    # Normalization Error
-    ax_s2.plot(history['t'], history['norm_x'], label=r'$N(t)$')
-    ax_s2.set_title("Wavefunction Normalization over Time")
-    ax_s2.set_xlabel("Time (t)")
-    ax_s2.set_ylabel("Norm")
-    ax_s2.grid(True, alpha=0.3)
-    plt.tight_layout()
+    ax_x, ax_p = axes[0]
+    ax_nx, ax_nk = axes[1]
+    ax_e, ax_empty = axes[2]
     
+    t = history['t']
+
+    # --- Row 0: Trajectories (Position & Momentum) ---
+    ax_x.plot(t, history['exp_x'], label=f'$\\langle x \\rangle$ {condition}')
+    if most_prob: ax_x.plot(t, history['x_p'], linestyle='--', alpha=0.6, label=f'$x_p$ {condition}')
+    norm_psi = np.log(history['norm_x']) if log_scale else history['norm_x']
+    norm_phi = np.log(history['norm_k']) if log_scale else history['norm_k']
+    log_lbl = r"\ln\," if log_scale else ""
+    ax_nx.plot(t, norm_psi, label=f'${log_lbl}N_x(t)$ {condition}')
+    ax_nk.plot(t, norm_phi, label=f'${log_lbl}N_k(t)$ {condition}')
+    ax_e.plot(t, history['exp_H'], label=f'$\\langle H \\rangle$ {condition}')
+    ax_p.plot(t, history['exp_p'], label=f'$\\langle k \\rangle$ {condition}')
+    if most_prob: ax_p.plot(t, history['k_p'], linestyle='--', alpha=0.6, label=f'$k_p$ {condition}')
+
+    if final:
+        if (F_func is not None):
+            ax_x.plot(t, history['x_c'], color='black', label=f'$x_c$ (Classical)')
+        
+        ax_x.set_ylabel("$x$")
+        ax_x.grid(True, alpha=0.3)
+        ax_x.legend(fontsize=5)
+
+        ax_p.set_ylabel("$k$")
+        ax_p.grid(True, alpha=0.3)
+        ax_p.legend(fontsize=5)
+        
+        # --- Row 1: Normalizations ---
+        ax_nx.set_ylabel("$" + log_lbl + r"\langle \psi | \psi \rangle$")
+        ax_nx.grid(True, alpha=0.3)
+        ax_nx.legend(fontsize=5)
+
+        ax_nk.set_ylabel("$" + log_lbl + r"\langle \phi | \phi \rangle$")
+        ax_nk.grid(True, alpha=0.3)
+        ax_nk.legend(fontsize=5)
+
+        # --- Row 2: Expected Energy ---
+        ax_e.set_ylabel(r"$\langle H \rangle$")
+        ax_e.grid(True, alpha=0.3)
+        ax_e.legend(fontsize=5)
+
+        ax_e.set_xlabel("$t$")
+        ax_nk.set_xlabel("$t$")
+
     return fig_static
+
+def MiniProject1():
+    print("Starting MiniProject1...")
+
+    # Define the parameter sets for Parts (c), (d), and (f)
+    sim_runs = [
+        {
+            "name": "Part_C_Harmonic_k0_0", 
+            "title":r"$V(x)=x^2/2, \, k_0 = 0$",
+            "k0": 0.0, 
+            "V_func": harmonic_potential, 
+            "F_func": harmonic_force, 
+            "frames": 100, "dx": 0.1, "dt": 0.004
+        },
+        {
+            "name": "Part_D_Harmonic_k0_2", 
+            "title":r"$V(x)=x^2/2, \, k_0 = 2$",
+            "k0": 2.0, 
+            "V_func": harmonic_potential, 
+            "F_func": harmonic_force, 
+            "frames": 100, "dx": 0.1, "dt": 0.004
+        },
+        {
+            "name": "Part_F_Linear_k0_0", 
+            "title":r"$V(x)=x, \, k_0 = 0$",
+            "k0": 0.0, 
+            "V_func": linear_potential, 
+            "F_func": linear_force, 
+            "frames": 50, "dx": 0.1, "dt": 0.004
+        }
+    ]
+    
+    # 1. Run and save GIFs for the distinct assignment parts
+    for run in sim_runs:
+        print(f"\n--- Running Animation: {run['name']} ---")
+        
+        # Use lambda to inject the specific initial momentum
+        psi_init = lambda x: init_gaussian_1d(x, x0=-3.0, sigma=0.7, k0=run['k0'])
+        
+        res = simulate_1D(
+            V_func=run['V_func'], 
+            F_func=run['F_func'], 
+            psi_0_func=psi_init,
+            dx=run['dx'], dt=run['dt'], 
+            x_left=-15.0, x_right=15.0,
+            frames=run['frames'], 
+            animation_frame_scaling=10, 
+            methods=["SDLF",'split-operator'],           
+            show_animation=True, 
+            output_format='save'
+        )
+        
+        if res['raw_ani'] is not None:
+            gif_filename = f"images/{run['name']}.gif"
+            writer = PillowWriter(fps=15)
+            res['raw_ani'].save(gif_filename, writer=writer)
+            print(f"Saved {gif_filename}")
+
+        fig_static = plot_static_results(
+            res['history'], 
+            F_func=run['F_func'],
+            final=True,
+            most_prob=True
+        )
+
+        fig_static.suptitle(run['title'])
+        plt.tight_layout()
+        static_file = f"images/{run['name']}_summary.png"
+        fig_static.savefig(static_file, dpi=300)
+        print("Saved",static_file)
+
+    # 2. Convergence tests for Part (e)
+    print("\n--- Running Convergence Tests (Part E) ---")
+    plt.close('all')
+    
+    # Initialize the figure and axes using your structure
+    fig_static, axes = plt.subplots(3, 2, figsize=(10, 12), sharex=False)
+    plt.delaxes(axes[2][1]) 
+
+    dx_dt_meth_list = [
+        (0.2, 0.01, "SDLF"),
+        (0.2, 0.01, "split-operator"),
+        (0.1,0.05, "split-operator"),
+        (0.1, 0.00825, "SDLF"),
+    ]
+
+    for i, (dx, dt, method) in enumerate(dx_dt_meth_list):
+        print(f"Simulating dx={dx}, dt={dt}...")
+        psi_init = lambda x: init_gaussian_1d(x, x0=-3.0, sigma=0.7, k0=0.0)
+        
+        sim_time = 6.8
+        total_steps = int(sim_time / dt)
+        
+        res = simulate_1D(
+            V_func=harmonic_potential, 
+            F_func=harmonic_force, 
+            psi_0_func=psi_init,
+            dx=dx, dt=dt, 
+            x_left=-10.0, x_right=10.0,
+            frames=total_steps, 
+            animation_frame_scaling=1, 
+            methods=[method],
+            show_animation=False, 
+            output_format='save'
+        )
+        
+        # Check if this is the final iteration to apply labels, grids, and the classical trajectory
+        is_final = (i == len(dx_dt_meth_list) - 1)
+        
+        plot_static_results(
+            res['history'], 
+            condition=f"({method}, $\\Delta x={dx}, \\Delta t={dt}$)", 
+            axes=axes, fig_static=fig_static, 
+            F_func=harmonic_force,
+            final=is_final,
+            most_prob=False,
+            log_scale=False
+        )
+
+    fig_static.suptitle("Convergence Testing for $V(x) = x^2/2$", fontsize=20)
+    plt.tight_layout()
+    static_file = "images/Part_E_Convergence.png"
+    fig_static.savefig(static_file, dpi=300)
+    print(f"Saved convergence plot to {static_file}")
 
 def test_1D():
     # Setup for Harmonic Oscillator (Assignment parameters)
@@ -547,19 +723,6 @@ def step_sdlf(psi, F_banded, dt):
 #####################################################################################
 ################## 2D case ##########################################################
 #####################################################################################
-
-def init_grid_2d_old(dx, x_left, x_right, y_down, y_up):
-    """
-    Initializes the 2D spatial grid.
-    Uses a single dx for both dimensions, assuming delta y = delta x.
-    """
-    x = np.arange(x_left, x_right + dx, dx)
-    y = np.arange(y_down, y_up + dx, dx)
-    
-    # Create 2D meshgrid matrices
-    X, Y = np.meshgrid(x, y)
-    
-    return x, y, X, Y
 
 def init_grid_2d(dx, x_left, x_right, y_down, y_up):
     """
@@ -1313,5 +1476,5 @@ def MiniProject3():
 
 if __name__ == "__main__": 
     print("-"*15 + "   starting simulations   " + "-"*15)
-    # MiniProject3()
+    MiniProject1()
     print("-"*15 + " all simulations finished " + "-"*15)
