@@ -516,6 +516,14 @@ def MiniProject1():
     # Define the parameter sets for Parts (c), (d), and (f)
     sim_runs = [
         {
+            "name": "Part_B_Free_k0_2", 
+            "title":r"$V(x)=0, \, k_0 = 2$",
+            "k0": 2.0, 
+            "V_func": lambda x: np.zeros_like(x), 
+            "F_func": lambda x: np.zeros_like(x), 
+            "frames": 100, "dx": 0.1, "dt": 0.004
+        },
+        {
             "name": "Part_C_Harmonic_k0_0", 
             "title":r"$V(x)=x^2/2, \, k_0 = 0$",
             "k0": 0.0, 
