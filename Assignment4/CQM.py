@@ -548,13 +548,31 @@ def step_sdlf(psi, F_banded, dt):
 ################## 2D case ##########################################################
 #####################################################################################
 
-def init_grid_2d(dx, x_left, x_right, y_down, y_up):
+def init_grid_2d_old(dx, x_left, x_right, y_down, y_up):
     """
     Initializes the 2D spatial grid.
     Uses a single dx for both dimensions, assuming delta y = delta x.
     """
     x = np.arange(x_left, x_right + dx, dx)
     y = np.arange(y_down, y_up + dx, dx)
+    
+    # Create 2D meshgrid matrices
+    X, Y = np.meshgrid(x, y)
+    
+    return x, y, X, Y
+
+def init_grid_2d(dx, x_left, x_right, y_down, y_up):
+    """
+    Initializes the 2D spatial grid.
+    Uses np.linspace to avoid floating-point accumulation errors and ensure symmetry.
+    """
+    # Calculate the exact number of points
+    Nx = int(round((x_right - x_left) / dx)) + 1
+    Ny = int(round((y_up - y_down) / dx)) + 1
+    
+    # Generate exactly symmetric arrays
+    x = np.linspace(x_left, x_right, Nx)
+    y = np.linspace(y_down, y_up, Ny)
     
     # Create 2D meshgrid matrices
     X, Y = np.meshgrid(x, y)
@@ -600,7 +618,8 @@ def disk_potential_2d(X, Y, R=1.5, center_x=0.0, center_y=0.0, v_out=0.0, v_in=1
     """
     Returns a 2D disk potential with radius R 
     """
-    return np.where(((X-center_x)**2 + (Y-center_y)**2) < R**2, v_out, v_in)
+    epsilon = 1e-10
+    return np.where(((X-center_x)**2 + (Y-center_y)**2) < R**2 + epsilon, v_out, v_in)
 
 
 def harmonic_potential_2d(X, Y, omega_x=1.0, omega_y=1.0):
@@ -1293,4 +1312,6 @@ def MiniProject3():
 
 
 if __name__ == "__main__": 
-    MiniProject3()
+    print("-"*15 + "   starting simulations   " + "-"*15)
+    # MiniProject3()
+    print("-"*15 + " all simulations finished " + "-"*15)
