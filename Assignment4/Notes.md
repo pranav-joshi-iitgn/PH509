@@ -757,9 +757,9 @@ The goal is to verify whether $E$ is an eigen-energy by checking whether $f(E)\a
 Although, we can zero-in on a particular eigen-energy using bisection methods in $\log_2(N_E)$ time were $N_E$ is the number of values of $E$ (regularly spaced) that we will test. I instead want to create plots for $f(E)$ or $\log_{10}|f(E)|$ itself. To do this, I will define:
 
 $$
-\vec u(x) = [u_{E_n}(x)]_n \\
-\vec v(x) = [u'_{E_n}(x)]_n \\
-\vec E = [E_n]_n
+\vec u(x) = [u_{E_k}(x)]_k \\
+\vec v(x) = [u'_{E_k}(x)]_k \\
+\vec E = [E_k]_k
 $$
 
 and re-write the ATISE as :
@@ -771,7 +771,9 @@ $$
 
 Here, the "$*$" symbol represents point-wise multiplication. 
 
-The final output data will be 4 matrices (for $\vec u^{\uparrow}, \vec u^{\downarrow}, \vec v^{\uparrow}, \vec v^{\downarrow}$), with each row having the value of $\vec u(x)$ for a particular $x$. These matrices can be used for computing $\vec f$ , for plotting, for animation, and for just displaying as a heatmap via `imshow`.
+To make the method memory efficient, we will simply update the vectors via the RK2 step as well as the $x$ value (by chosen $\Delta x$) till $x_m$ is reached. We will do this for both the halfs of the $[x_l, x_r]$ segment individually and then compute the vector $\vec f = [f(E_k)]_k$ from the resulting vectors at $x_m$. 
+
+We will also implement a separate function that will run RK2 for a given (scalar) $x_l, x_r, \Delta x, a(x), v_l, u_l$ and will go all the way from $x_l$ to $x_r$ with no split like we did for the shooting method. It will fill an array for $u$ in the process (initially set to all 0) and return this array as the result. This function will be used to visualise the eigenstates by passing in the corresponding $a(x)$. 
 
 ## Central attractive potentials in 3D
 
@@ -824,6 +826,41 @@ LR = 2r^2R(V-E) - \frac{d}{dr}r^2 \frac{d}{dr}R \\
 LY\sin^2\alpha = \sin\alpha \frac{\partial}{\partial \alpha} \sin\alpha \frac{\partial}{\partial \alpha} Y + \frac{\partial^2}{\partial \beta^2}Y
 $$
 
+Now, as we have arbitrary scaling for each part, we can WLOG assume that the angular part is normalised. 
+Essentially, we require :
+
+$$
+\int_{r=-\infty}^\infty\int_\alpha\int_\beta R(r)^2Y^2(\alpha,\beta) r^2\sin\alpha dr d\alpha d\beta = 1 \\\implies
+[\int_{-\infty}^\infty R^2(r)r^2 dr][\int_{\alpha}\int_\beta Y^2(\alpha,\beta) \sin\alpha d\alpha d\beta] =1
+$$
+
+By ensuring that
+
+$$
+\int_{\alpha}\int_\beta Y^2(\alpha,\beta) \sin\alpha d\alpha d\beta =1
+$$
+
+we can then have the normalisation
+
+$$
+\int_{-\infty}^\infty R^2(r)r^2 dr =1
+$$
+
+Then, for the expected value of any function $g(r)$, we can do
+
+$$
+\braket{g} = \int_{r=-\infty}^\infty\int_\alpha\int_\beta g(r)R^2(r)Y^2(\alpha,\beta) r^2\sin\alpha dr d\alpha d\beta \\= 
+\int_{-\infty}^\infty g(r)R^2(r)r^2 dr 
+$$
+
+In fact, even if we do not ensure normalisation of the angular part, we can still write this equation :
+
+$$
+\braket{g} = \frac{\int_{-\infty}^\infty g(r)R^2(r)r^2 dr}{\int_{-\infty}^\infty R^2(r)r^2 dr}
+$$
+
+This allows use to compute expected values of quantities such as $r$ and $1/r$ using the numerical solution for $R(r)$.
+
 Now, _once again_, we can split $Y=P(\alpha)Q(\beta)$, allowing us to rewite the 2nd equation as ;
 
 $$
@@ -871,7 +908,19 @@ $$
 \boxed{u''(r) = (2(V(r)-E) +\frac{l(l+1)}{r^2}) \,u(r)}
 $$
 
-Consider the adimensionalised electrostratic potential for an electron in some shell of a hydrogen atom, i.e. $V(r) = -1/r$. Plugging that in, we get :
+This is accompanied by the normalisation condition
+
+$$
+\int_{-\infty}^\infty u^2(r)dr = 1
+$$
+
+and the expectation equation (assuming normalisation is done) :
+
+$$
+\braket{g(r)} = \int_{-\infty}^\infty g(r)u^2(r)dr
+$$
+
+Now, consider the a-dimensionalised electrostratic potential for an electron in some shell of a hydrogen atom, i.e. $V(r) = -1/r$. Plugging that in, we get :
 
 $$
 u''(r) = (-2E - \frac{2}{r} + \frac{l(l+1)}{r^2}) u(r) \iff\\
@@ -916,5 +965,3 @@ def electrostatic_potential_eff(r:(np.ndarray|float), l=0, mu=0, lamb=0, Z=1):
 ```
 
 The function that will be written for the shooting method will accept any potential $V:\mathbb{R}\to \mathbb{R}$ as an input. We will simply pass in `electrostatic_potential_eff` as an input to simulate an atom with atomic number $Z$ and a single electron.
-
-This write-up also 
