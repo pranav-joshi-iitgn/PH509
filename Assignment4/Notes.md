@@ -657,6 +657,8 @@ Thus, this method isn't used professionally.
 
 But, for the toy examples we have, I can certainly use it to verify correctness. 
 
+# Chapter 9
+
 ## Shooting method
 
 The TDSE with a time-independent potential can be simplified to the TISE as :
@@ -771,4 +773,86 @@ Here, the "$*$" symbol represents point-wise multiplication.
 
 The final output data will be 4 matrices (for $\vec u^{\uparrow}, \vec u^{\downarrow}, \vec v^{\uparrow}, \vec v^{\downarrow}$), with each row having the value of $\vec u(x)$ for a particular $x$. These matrices can be used for computing $\vec f$ , for plotting, for animation, and for just displaying as a heatmap via `imshow`.
 
+## Central attractive potentials in 3D
 
+Consider the 3D ATDSE with a central attractive potential $V(r)$ where $r = |r|$:
+
+$$
+-\frac{1}{2}\nabla^2\psi(\vec r, t) + V(r)\psi(\vec r,t) = i\frac{\partial }{\partial t}\psi(\vec r, t)
+$$
+
+We can, as always, convert this to a time-independent equation as :
+
+$$
+-\frac{1}{2}\nabla^2\psi(\vec r) + V(r)\psi(\vec r) = E\psi(\vec r)
+$$
+
+Now, futher doing a separation of variables as $\psi(\vec r) = R(r)Y(\alpha, \beta)$ (where $\alpha$ is the angle from the z axes and $\beta$ is the polar angle in the x-y plane) and using the spherical coordinate version of the laplacian, i.e.
+
+$$
+\nabla^2 = \frac{1}{r^2}\frac{\partial}{\partial r} r^2 \frac{\partial}{\partial r}
++ \frac{1}{r^2}\frac{1}{\sin \alpha}\frac{\partial}{\partial \alpha} \sin \alpha \frac{\partial}{\partial \alpha}
++ \frac{1}{r^2}\frac{1}{\sin^2 \alpha}\frac{\partial^2}{\partial \beta^2}
+$$
+
+we can write :
+
+$$
+\nabla^2 \psi(\vec r) = 
+[\frac{1}{r^2} \frac{\partial }{\partial r} r^2 \frac{\partial}{\partial r} R]Y 
++ [\frac{1}{r^2}R][\frac{1}{\sin \alpha}\frac{\partial}{\partial \alpha} \sin \alpha \frac{\partial}{\partial \alpha} Y 
++ \frac{1}{\sin^2 \alpha}\frac{\partial^2}{\partial \beta^2} Y] 
+= 2(V(r)-E)RY
+$$
+
+For the cases where $\psi \ne 0, r \ne 0$, we can write :
+
+$$
+[\frac{1}{R} \frac{\partial }{\partial r} r^2 \frac{\partial}{\partial r} R] 
++ [\frac{1}{Y}\frac{1}{\sin \alpha}\frac{\partial}{\partial \alpha} \sin \alpha \frac{\partial}{\partial \alpha} Y 
++ \frac{1}{Y}\frac{1}{\sin^2 \alpha}\frac{\partial^2}{\partial \beta^2} Y] = 2r^2(V(r)-E) \\ \implies \\
+\frac{1}{Y}\frac{1}{\sin \alpha}\frac{\partial}{\partial \alpha} \sin \alpha \frac{\partial}{\partial \alpha} Y 
++ \frac{1}{Y}\frac{1}{\sin^2 \alpha}\frac{\partial^2}{\partial \beta^2} Y 
+= 2r^2(V(r)-E) 
+- \frac{1}{R} \frac{\partial }{\partial r} r^2 \frac{\partial}{\partial r} R
+$$
+
+Clearly, since LHS and RHS are functions of different coordinates, they must both be a constant, say some $L$. This gives :
+
+$$
+LR = 2r^2R(V-E) - \frac{d}{dr}r^2 \frac{d}{dr}R \\
+LY\sin^2\alpha = \sin\alpha \frac{\partial}{\partial \alpha} \sin\alpha \frac{\partial}{\partial \alpha} Y + \frac{\partial^2}{\partial \beta^2}Y
+$$
+
+Now, _once again_, we can split $Y=P(\alpha)Q(\beta)$, allowing us to rewite the 2nd equation as ;
+
+$$
+L[P\sin^2\alpha]Q = [\sin\alpha \frac{\partial}{\partial \alpha}\sin\alpha \frac{\partial}{\partial \alpha} P]Q + P[\frac{\partial^2}{\partial \beta^2}Q]
+$$
+
+Then, once again, by the same logic, we can write :
+
+$$
+LP\sin^2\alpha - \sin\alpha \frac{\partial}{\partial \alpha} \sin\alpha \frac{\partial}{\partial \alpha} P = PM \\
+\frac{\partial^2}{\partial^2\beta^2}Q = QM
+$$
+
+where $M$ is some constant. 
+
+In summary, we have this eigenstate :
+
+$$
+\boxed{\psi_{E,L,M}(\vec r) = R(r)P(\alpha)Q(\beta)}\\
+\boxed{LR = 2r^2R(V-E) - \frac{d}{dr}r^2 \frac{d}{dr}R} \\
+\boxed{LP\sin^2\alpha - \sin\alpha \frac{\partial}{\partial \alpha} \sin\alpha \frac{\partial}{\partial \alpha} P = PM} \\
+\boxed{\frac{\partial^2}{\partial^2\beta^2}Q = QM}
+$$
+
+For the last equation, since $\beta \in [0,2\pi]$, and the solution _must_ be periodic for it to be physical, we require $M=-m^2$ where $m$ is an integer, giving us $e^{\pm i m\beta}$ as the basis. 
+This $``m"$ is called the _Azimuthal Quantum Number_.
+Similarly for the equation involving $P(\alpha)$, it turns out that we require $L = -l(l+1)$ where $l$ is an integer.
+This $``l"$ is the _Orbital Angular Momentum Quantum Number_ . 
+
+The $l$ quantum number gives us the shape of the "orbit" and the $m$ quantum number gives us the orientation. 
+
+For example, if $m=0$, we get rotational symmetry about z axis, like in the case of the $p_z$ orbital . If it is non-zero, we get a sinusoidal basis, i.e. $\sin(m\beta)$ and $\cos(m\beta)$ . For example, with $m^2=1$, we have $\sin(\beta),\cos(\beta)$. These basis functions are what _chemists_ (not physicists) denote as the $m=1$ and $m=-1$ states. That is ofc, utter garbarge notation. But that's just what is used. 
