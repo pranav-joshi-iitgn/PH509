@@ -656,3 +656,119 @@ Although this method gives analytically correct time evolution, the $O(N^3)$ bot
 Thus, this method isn't used professionally. 
 
 But, for the toy examples we have, I can certainly use it to verify correctness. 
+
+## Shooting method
+
+The TDSE with a time-independent potential can be simplified to the TISE as :
+
+$$
+\psi_E(x,t) = u_E(x) e^{-iEt/\hbar} \\
+-\frac{\hbar^2}{2m} \frac{\partial^2}{\partial x^2} u_E(x) + V(x)u_E(x) = \hat H u_E(x) = Eu_E(x) \\
+\text{where} \quad u_E : \mathbb{R} \to \mathbb{R} \quad \text{and} \quad \braket{u_E | u_E} = 1 
+$$
+
+This means that $u_E(x)$ is an eigen-function or eigen-state of $\hat H$, with $E$ as the eigenvalue, or eigen-energy.
+
+In atomic units, we simply get :
+
+$$
+\psi_E(\tilde x,\tilde t) = u_E(\tilde x)e^{-i\tilde E\tilde t} \\
+-\frac{1}{2}\frac{\partial^2}{\partial \tilde x^2} u_E(\tilde x) + \tilde V(\tilde x) u_E(\tilde x) = \tilde H u_E(\tilde x)=  \tilde E u(\tilde x) \\
+\text{where} \quad \tilde E = E/E_0
+$$
+
+For the rest of this section, I will be using this adimensional time independent Schrodinger equation (ATISE) without the tilde notation. 
+
+Now, consider a potential of the form 
+
+$$
+V(x) = \begin{cases}
+W(x) & \text{if} & x \in [x_l, x_r] \\
+0
+\end{cases}
+$$
+
+In this case, for the $[x_l, x_r]$ region, we have :
+
+$$
+-\frac{1}{2}\frac{d^2}{d x^2} u_E = (E+W(x)) u_E
+$$
+
+And for the other regions, we have :
+
+$$
+-\frac{1}{2}\frac{d^2}{d x^2} u_E = E u_E
+$$
+
+Now, the solution to $-\frac{1}{2}\frac{d^2}{dx^2} u_E = E u_E$ when $E < 0$, or $2E = -k^2,\, k \in \mathbb{R}^+$ is :
+
+$$
+u_E(x) = Ae^{kx} + Be^{-kx}
+$$
+
+In the region $[x_r, \infty)$, if the $A$ coefficient is non-zero, we will have $\braket{u_E|u_E} = \infty$. This will be non-physical. Similarly, in the $(-\infty, x_l]$ region, if we have $B\ne 0$, we face the same issue. 
+
+If we instead have $E > 0$, we will have solutions of the form :
+
+$$
+u_E(x) = Ae^{ikx} + Be^{-ikx}
+$$
+
+This immediately has the same problem of $\braket{u_E|u_E}$ being infinite. Moreover, unlike the $E < 0$ case, there is no cure to this. Thus, $E > 0$ is non-physical. 
+
+This leaves us with $E=0$, which gives us $u_E(x) = Ax + B$. Again, this has the same issue. 
+
+Thus, our physical solution for $u(x)$ must exponentially decay to 0 as $|x| \to \infty$ for it to be physical.  
+
+Although we have figured out these properties only for the particular form of $V(x)$ that we used to solve, we can show that the property $|x|\to \infty \implies u_E(x) \to 0$ still holds for any potential that has the proverty $|x|\to \infty \implies V(x) \to \infty$. Also, the $E<0$ property holds too. 
+This is of-course only for a physical solution. 
+
+In general, the ATISE has 2 _mathematical_ basis solutions for any $E < 0$; one physical (like we saw) and other _non-physical_ which _grows_ exponentially on the tails. This is because of the fact that the equation is linear (meaning any solution is a linear combination of a basis of solutions) and 2nd order, meaning that specifying $u_E(x_0)=a, u_E'(x_0)=b$ gives a unique solution. Since, for any $(a,b)$, we can write it as a linear combination of $(u_{E,\text{physical}}(x_0), u_{E,\text{physical}}'(x_0))$ and $(u_{E,\text{non-physical}}(x_0), u_{E,\text{non-physical}}'(x_0))$ for _some_ $x_0$, we can also write any solution as a linear combination of this basis with two elements. 
+
+Define $x_m = \frac{1}{2}(x_r + x_l)$.
+Then, one can get a mathematically unique solution for $[x_m, \infty)$ by setting $u_E(x_r)=0$ and $u_E'(x_r)=v_r$. This will be a linear combination of the physical solution that decays to 0 as $x\to \infty$ and the non-phyiscal solution that explodes $\infty$ instead. Now, by setting $v_r$ as a very small value, the coefficient for the non-physical solution will be small (assuming $x_r$ is large enough) and thus the contribution of the non-physical solution at $x_m$ will be small. 
+This means, that we will effectively recover the value of the _physical_ solution as $x_m$. The same goes for the derivative $u_E'$ too (the non-physical solution's contribution to the derivative will be small at $x_m$). 
+Similarly, if we solve for $(-\infty, x_m]$, with $u_E(x_l)=0$ and $u_E'(x_l)=v_l$, the non-physical solution (which explodes to $\pm \infty$ as $x\to \infty$) will have very small contributions at $x_m$ . 
+
+Furthermore, the exact values of $v_l$ and $v_r$ only scale the (non-normalised) solutions $u_E ^\uparrow, u_E^\downarrow$ for $(-\infty, x_m]$ and $[x_m, \infty)$ respectively. We know that for the correct values of $v_r$ and $v_l$, the physical solutions for the two halfs will become identical. Again, since this is a 2nd order ODE, this is equivalent to saying 
+
+$$
+u_E^\uparrow(x_m) = u_E^\downarrow(x_m) \\
+u_E'^\uparrow(x_m) = u_E'^\downarrow(x_m)
+$$
+
+But even without the correct ratio of $v_r, v_l$, what we _do_ have is :
+
+$$
+\exist\, C \in \mathbb{R} \;\text{ s.t.} \quad
+u_E^\uparrow(x_m) = C u_E^\downarrow(x_m) \quad
+\text{and} \quad u_E'^\uparrow(x_m) = C u_E'^\downarrow(x_m) \\\implies
+f(E) := u_E^\uparrow(x_m) u_E'^\downarrow(x_m) - u_E^\downarrow(x_m)u_E'^\uparrow(x_m) = 0
+$$
+
+Of course, for an $E$ that is not an eigen-energy, we will have $f(E)\ne 0$. 
+
+This is the basis for the shooting method. 
+We choose extreme $x_l, x_r$ values (as per the spatial scale of the problem) and discretise the $[x_l, x_m]$ and $[x_m, x_r]$ segments. We set the boundary conditions for $x_l, x_r$ as described, with arbitrary, but small values of $v_l, v_r$ and solve the 2nd order ODE, for a given energy $E<0$ for the $[x_l, x_m]$ segment and $[x_m, x_r]$ segment individually (with the 2nd segment solved backwards from $x_r$ to $x_m$) to get the value of $u_E^\uparrow(x_m),u_E'^\downarrow(x_m),u_E^\downarrow(x_m),u_E'^\uparrow(x_m)$ and thus $f(E)$. Solving the 2nd order ODE can be done using any method, say RK2. 
+The goal is to verify whether $E$ is an eigen-energy by checking whether $f(E)\approx 0$.
+
+Although, we can zero-in on a particular eigen-energy using bisection methods in $\log_2(N_E)$ time were $N_E$ is the number of values of $E$ (regularly spaced) that we will test. I instead want to create plots for $f(E)$ or $\log_{10}|f(E)|$ itself. To do this, I will define:
+
+$$
+\vec u(x) = [u_{E_n}(x)]_n \\
+\vec v(x) = [u'_{E_n}(x)]_n \\
+\vec E = [E_n]_n
+$$
+
+and re-write the ATISE as :
+
+$$
+\frac{d}{dx} \vec v(x) = 2(V(x)-\vec E)* \vec u(x) = \vec{K(x)}*\vec u(x) = \vec a(x)\\
+\frac{d}{dx} \vec u(x) = v(x)
+$$
+
+Here, the "$*$" symbol represents point-wise multiplication. 
+
+The final output data will be 4 matrices (for $\vec u^{\uparrow}, \vec u^{\downarrow}, \vec v^{\uparrow}, \vec v^{\downarrow}$), with each row having the value of $\vec u(x)$ for a particular $x$. These matrices can be used for computing $\vec f$ , for plotting, for animation, and for just displaying as a heatmap via `imshow`.
+
+
