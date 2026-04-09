@@ -856,3 +856,65 @@ This $``l"$ is the _Orbital Angular Momentum Quantum Number_ .
 The $l$ quantum number gives us the shape of the "orbit" and the $m$ quantum number gives us the orientation. 
 
 For example, if $m=0$, we get rotational symmetry about z axis, like in the case of the $p_z$ orbital . If it is non-zero, we get a sinusoidal basis, i.e. $\sin(m\beta)$ and $\cos(m\beta)$ . For example, with $m^2=1$, we have $\sin(\beta),\cos(\beta)$. These basis functions are what _chemists_ (not physicists) denote as the $m=1$ and $m=-1$ states. That is ofc, utter garbarge notation. But that's just what is used. 
+
+Now, substituting $L = -l(l+1)$ back into the equation for $R$, we get :
+
+$$
+-l(l+1)R = 2r^2R(V-E) - \frac{d}{dr}r^2 \frac{d}{dr}R
+$$
+
+Define $u(r)=rR(r) \implies R = u/r$, giving us :
+
+$$
+-l(l+1)\frac{u}{r} = 2ru(V-E) - \frac{d}{dr} (ru' -u) \\\implies
+-l(l+1)u = 2r^2u(V-E) - r (ru'' + u' - u') \\\implies
+\boxed{u''(r) = (2(V(r)-E) +\frac{l(l+1)}{r^2}) \,u(r)}
+$$
+
+Consider the adimensionalised electrostratic potential for an electron in some shell of a hydrogen atom, i.e. $V(r) = -1/r$. Plugging that in, we get :
+
+$$
+u''(r) = (-2E - \frac{2}{r} + \frac{l(l+1)}{r^2}) u(r) \iff\\
+\boxed{-\frac{1}{2} \frac{d^2}{dr^2} u(r) + [\frac{l(l+1)}{2r^2} - \frac{1}{r}]u(r) = Eu(r)}
+$$
+
+The boxed equation is what the assignment refers to as the "radial equation" (though it's using $u = rR$ and not $R$).
+
+Define 
+
+$$
+V_\text{eff}(r) = V(r) +  \frac{l(l+1)}{2r^2}
+$$
+
+This in our case is:
+
+$$
+V_\text{eff}(r) = -\frac{1}{r} +  \frac{l(l+1)}{2r^2}
+$$
+
+Using this, we can rewrite the equation as :
+
+$$
+u''(r) = 2(V(r)-E) u(r) \iff \\
+-\frac{1}{2}\frac{d^2}{dr^2} u(r) + V_\text{eff} u(r) = E u(r)
+$$
+
+This is similar to the usual TISE formulation, although $u(r)$ is not really the wave function we want to finally be solving for. 
+
+Since the assignment asks to modify the potential in one of the parts, let us consider a more general potential of 
+
+$$
+V(r) = -\frac{Ze^{-\mu r}}{r} + \lambda r^2 \\\implies
+V_\text{eff}(r) = -\frac{Ze^{-\mu r}}{r} + \lambda r^2 + \frac{l(l+1)}{2r^2}
+$$
+
+This is what we will use for the implementation. Namely, we will have the function:
+
+```python
+def electrostatic_potential_eff(r:(np.ndarray|float), l=0, mu=0, lamb=0, Z=1):
+    return (lamb*r*r) + (l*(l+1)/((2*r*r) + 1e-30)) - (Z*np.exp(-mu*r)/(r+1e-30))
+```
+
+The function that will be written for the shooting method will accept any potential $V:\mathbb{R}\to \mathbb{R}$ as an input. We will simply pass in `electrostatic_potential_eff` as an input to simulate an atom with atomic number $Z$ and a single electron.
+
+This write-up also 
