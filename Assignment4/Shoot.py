@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -164,7 +165,6 @@ def solve_radial_atom(l=0, mu=0.0, lamb=0.0, Z=1.0, r_max=100.0, dr=0.001, num_E
 
 def visualise_f_E(roots, E_vec, f_E, condition="",
     fig=None, ax=None, final=True):
-    print("Eigen-energies:",roots)
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=(8, 5))
     ax.plot(E_vec, f_E, label=f"$f(E)$ {condition}")
@@ -184,6 +184,8 @@ def visualise_f_E(roots, E_vec, f_E, condition="",
         ax.legend()
     return fig, ax
 
+def E2n(E):return int(round((-2*E)**-0.5))
+
 def visualise_eigenstates(roots, V_func, x_l, x_r, dx=0.001, condition="", 
                           fig=None, ax=None, final=True, method='numerov'):
     """
@@ -191,6 +193,10 @@ def visualise_eigenstates(roots, V_func, x_l, x_r, dx=0.001, condition="",
     """
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=(10, 6))
+
+    condition = condition.strip()
+    if condition != "" and not condition.startswith("(") and not condition.endswith(")"):
+        condition = "(" + condition + ")"
         
     for E in roots:
         # Run the RK2 solver from x_l to x_r
@@ -203,7 +209,8 @@ def visualise_eigenstates(roots, V_func, x_l, x_r, dx=0.001, condition="",
         # Normalise the wave-function (L-infinity norm) so they stack nicely on the same plot
         u_norm = u / np.max(np.abs(u))
         
-        ax.plot(x_vals, u_norm, label=f"$E={E:.4f}$ {condition}")
+        n = E2n(E)
+        ax.plot(x_vals, u_norm, label=f"$E_{n}={E:.4f}$ {condition}")
         
     if final:
         ax.axhline(0, color='black', linestyle='--', alpha=0.7)
@@ -228,11 +235,14 @@ def visualise_eigenstates_stitched(roots, V_func, x_l, x_r, dx=0.001, condition=
     
     # Pre-calculate the potential across the grid
     V_arr = V_func(x_vals)
+
+    condition = condition.strip()
+    if condition != "" and not condition.startswith("(") and not condition.endswith(")"):
+        condition = "(" + condition + ")"
     
     for E in roots:
         # --- DYNAMIC MATCHING POINT ---
-        # Find the classical turning point (where E > V). 
-        # We take the last index where this is true (the outer turning point).
+        n = E2n(E)
         allowed_indices = np.where(E > V_arr)[0]
         if len(allowed_indices) > 0:
             match_idx = allowed_indices[-1] 
@@ -264,66 +274,165 @@ def visualise_eigenstates_stitched(roots, V_func, x_l, x_r, dx=0.001, condition=
         u_stitched = np.concatenate((u_fwd, u_bwd_scaled[1:]))
         u_norm = u_stitched / np.max(np.abs(u_stitched))
     
-        ax.plot(x_stitched, u_norm, label=f"$E={E:.4f}$ {condition}")
+        ax.plot(x_stitched, u_norm, label=f"$E_{n}={E:.4f}$ {condition}")
         
     if final:
         ax.axhline(0, color='black', linestyle='--', alpha=0.7)
-        ax.set_xlabel('Coordinate ($r$)')
-        ax.set_ylabel('Normalised Wavefunction $u(r)$')
+        ax.set_xlabel('$r$')
+        ax.set_ylabel('Normalised $u(r)$')
         
         if not ax.get_title():
-            ax.set_title('Eigenstates $u(r)$ (Stitched at Turning Point)')
+            ax.set_title('Eigenstates')
             
         ax.grid(True, alpha=0.3)
         ax.legend()
         
     return fig, ax
 
-if __name__ == "__main__":
+def MiniProject2():
+    """
+    Executes the computations and visualizations for Problem 2 of the PH509 assignment.
+    Results are printed to the terminal, saved to 'test_results.txt', and plots 
+    are saved to the 'images/' folder.
+    """
+    if not os.path.exists('images'):
+        os.makedirs('images')
+        
+    results_file = open("test_results.txt", "w")
     
-    # 1. Define the parameters
-    Z, mu, lamb = 1.0, 0.0, 0.0
-    r_min, r_max, dr = 0.001, 100.0, 0.001
-    
-    # 2. Get the roots for l=0
-    l_0 = 0
-    roots_0, E_0, f_E_0 = solve_radial_atom(l=l_0, mu=mu, lamb=lamb, Z=Z, r_max=r_max, dr=dr, num_E=1000)
-    
-    # Define the potential function for l=0
-    V_0 = lambda r: electrostatic_potential_eff(r, l=l_0, mu=mu, lamb=lamb, Z=Z)
-    
-    # 3. Get the roots for l=1
-    l_1 = 1
-    roots_1, E_1, f_E_1 = solve_radial_atom(l=l_1, mu=mu, lamb=lamb, Z=Z, r_max=r_max, dr=dr, num_E=1000)
-    
-    # Define the potential function for l=1
-    V_1 = lambda r: electrostatic_potential_eff(r, l=l_1, mu=mu, lamb=lamb, Z=Z)
-    
-    # 4. Visualise the wavefunctions
-    # We only plot the first 2 roots of each to avoid overcrowding the plot
-    fig, ax = visualise_eigenstates(roots_0[:2], V_0, x_l=r_max, x_r=r_min, dx=-dr, condition="($l=0$)", final=False)
-    fig, ax = visualise_eigenstates(roots_1[:2], V_1, x_l=r_max, x_r=r_min, dx=-dr, condition="($l=1$)", fig=fig, ax=ax, final=True)
-    
-    # (Optional: zooming in to see the wave structure since the tails are long)
-    # ax.set_xlim(0, 30) 
-    
-    plt.show()
+    def log(msg):
+        print(msg)
+        results_file.write(msg + "\n")
+        
+    # Common parameters
+    r_max = 100.0  
+    dr = 0.001
+    E_min, E_max = -0.6, -0.01
+    num_E = 2000
 
-    # # 1. Define the parameters for pure Hydrogen
-    # Z, mu, lamb = 1.0, 0.0, 0.0
-    # r_min, r_max, dr = 0.001, 100.0, 0.001
+    # --- Part (a): Plot Effective Potential V_eff(r) ---
+    log(">>> Stage: Part (a) - Plotting Effective Potentials")
+    r_vals = np.linspace(0.1, 20.0, 500)
+    plt.figure(figsize=(8, 5))
+    for l in [0, 1, 2]:
+        V_eff = electrostatic_potential_eff(r_vals, l=l, Z=1.0)
+        plt.plot(r_vals, V_eff, label=f"$l={l}$")
+    plt.ylim(-1.5, 0.5)
+    plt.xlim(0, 20)
+    plt.axhline(0, color='black', linestyle='--', alpha=0.5)
+    plt.xlabel('$r$ (atomic units)')
+    plt.ylabel('$V_{eff}(r)$')
+    plt.title('Effective Potential for Hydrogen Atom')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.savefig('images/P2a_V_eff.png')
+    plt.close()
+    log("    Saved images/P2a_V_eff.png\n")
+
+    # --- Part (b, c, d): Compute and Plot for l=0, 1, 2 ---
+    log(">>> Stage: Computing Normal Hydrogen states (l=0, 1, 2)")
+    roots_l0, E_vec, f_E_l0 = solve_radial_atom(l=0, r_max=r_max, dr=dr, num_E=num_E, E_min=E_min, E_max=E_max)
+    roots_l1, _, f_E_l1 = solve_radial_atom(l=1, r_max=r_max, dr=dr, num_E=num_E, E_min=E_min, E_max=E_max)
+    roots_l2, _, f_E_l2 = solve_radial_atom(l=2, r_max=r_max, dr=dr, num_E=num_E, E_min=E_min, E_max=E_max)
     
-    # # 2. Solve for l=0 
-    # # (Assuming solve_radial_atom returns: roots, E_vec, f_E)
-    # roots_0, E_0, f_E_0 = solve_radial_atom(l=0, mu=mu, lamb=lamb, Z=Z, r_max=r_max, dr=dr, num_E=1000)
+    V_0 = lambda r: electrostatic_potential_eff(r, l=0, Z=1.0)
+    V_1 = lambda r: electrostatic_potential_eff(r, l=1, Z=1.0)
+    V_2 = lambda r: electrostatic_potential_eff(r, l=2, Z=1.0)
+
+    # Figure 1: 3x2 Grid for l=0, 1, 2
+    fig1, axes1 = plt.subplots(3, 2, figsize=(12, 12), sharex='col')
     
-    # # 3. Visualise the newly stabilised f(E)
-    # fig, ax = plt.subplots(figsize=(10, 6))
-    # fig, ax = visualise_f_E(roots_0, E_0, f_E_0, condition="($l=0$, Dynamic Turning Point)", fig=fig, ax=ax, final=True)
+    # Row 0: l=0
+    if len(roots_l0) > 0:
+        visualise_eigenstates_stitched(roots_l0[:3], V_0, x_l=0.001, x_r=r_max, dx=dr, method='numerov', fig=fig1, ax=axes1[0,0], final=True)
+    visualise_f_E(roots_l0, E_vec, f_E_l0, fig=fig1, ax=axes1[0,1], final=True)
+    axes1[0,0].set_title('Eigenstates ($l=0$)')
+    axes1[0,1].set_title('$f(E)$ Mismatch Function ($l=0$)')
+    axes1[0,0].set_xlim(0, 30)
+
+    # Row 1: l=1
+    if len(roots_l1) > 0:
+        visualise_eigenstates_stitched(roots_l1[:2], V_1, x_l=0.001, x_r=r_max, dx=dr, method='numerov', fig=fig1, ax=axes1[1,0], final=True)
+    visualise_f_E(roots_l1, E_vec, f_E_l1, fig=fig1, ax=axes1[1,1], final=True)
+    axes1[1,0].set_title('Eigenstates ($l=1$)')
+    axes1[1,1].set_title('$f(E)$ Mismatch Function ($l=1$)')
+    axes1[1,0].set_xlim(0, 30)
+
+    # Row 2: l=2
+    if len(roots_l2) > 0:
+        visualise_eigenstates_stitched(roots_l2[:1], V_2, x_l=0.001, x_r=r_max, dx=dr, method='numerov',  fig=fig1, ax=axes1[2,0], final=True)
+    visualise_f_E(roots_l2, E_vec, f_E_l2, fig=fig1, ax=axes1[2,1], final=True)
+    axes1[2,0].set_title('Eigenstates ($l=2$)')
+    axes1[2,1].set_title('$f(E)$ Mismatch Function ($l=2$)')
+    axes1[2,0].set_xlim(0, 30)
+
+    plt.tight_layout()
+    fig1.savefig('images/P2_normal_states_grid.png')
+    plt.close(fig1)
+    log("    Saved 3x2 Normal States grid to images/P2_normal_states_grid.png")
+
+    # --- Part (f): Break Degeneracy Visual Comparison ---
+    log(">>> Stage: Part (f) - Breaking Degeneracy (3x2 Grid Comparison)")
     
-    # # Optional: Plot l=1 on the same graph to see how the mismatch functions compare
-    # roots_1, E_1, f_E_1 = solve_radial_atom(l=1, mu=mu, lamb=lamb, Z=Z, r_max=r_max, dr=dr, num_E=1000)
-    # fig, ax = visualise_f_E(roots_1, E_1, f_E_1, condition="($l=1$, Dynamic Turning Point)", fig=fig, ax=ax, final=True)
+    # 1. Non-zero lambda (Harmonic perturbation)
+    lam_val = 1e-5
+    roots_lam0, _, f_E_lam0 = solve_radial_atom(l=0, lamb=lam_val, r_max=r_max, dr=dr, num_E=num_E, E_min=E_min, E_max=E_max)
+    roots_lam1, _, f_E_lam1 = solve_radial_atom(l=1, lamb=lam_val, r_max=r_max, dr=dr, num_E=num_E, E_min=E_min, E_max=E_max)
+    V_lam_0 = lambda r: electrostatic_potential_eff(r, l=0, lamb=lam_val, Z=1.0)
+    V_lam_1 = lambda r: electrostatic_potential_eff(r, l=1, lamb=lam_val, Z=1.0)
+
+    # 2. Non-zero mu (Yukawa screening)
+    mu_val = 1e-2
+    roots_mu0, _, f_E_mu0 = solve_radial_atom(l=0, mu=mu_val, r_max=r_max, dr=dr, num_E=num_E, E_min=E_min, E_max=E_max)
+    roots_mu1, _, f_E_mu1 = solve_radial_atom(l=1, mu=mu_val, r_max=r_max, dr=dr, num_E=num_E, E_min=E_min, E_max=E_max)
+    V_mu_0 = lambda r: electrostatic_potential_eff(r, l=0, mu=mu_val, Z=1.0)
+    V_mu_1 = lambda r: electrostatic_potential_eff(r, l=1, mu=mu_val, Z=1.0)
+
+    # Figure 2: 3x2 Grid for Degeneracy Breaking
+    fig2, axes2 = plt.subplots(3, 2, figsize=(12, 12), sharex='col')
+
+    # Row 0: Normal Potential (Plotting l=0 and l=1 together to show degeneracy)
+    visualise_eigenstates_stitched(roots_l0[1:3], V_0, x_l=0.001, x_r=r_max, dx=dr, condition="($s$)", method='numerov', fig = fig2, ax=axes2[0,0], final=False)
+    visualise_eigenstates_stitched(roots_l1[0:2], V_1, x_l=0.001, x_r=r_max, dx=dr, condition="($p$)", method='numerov', fig = fig2, ax=axes2[0,0], final=True)
+    visualise_f_E(roots_l0, E_vec, f_E_l0, condition="($l=0$)", fig = fig2, ax=axes2[0,1], final=False)
+    visualise_f_E(roots_l1, E_vec, f_E_l1, condition="($l=1$)", fig = fig2, ax=axes2[0,1], final=True)
+    axes2[0,0].set_title('Normal Potential (Degenerate)')
+    axes2[0,0].set_xlim(0, 30)
+
+    # Row 1: Non-zero Lambda
+    if len(roots_lam0) > 1: visualise_eigenstates_stitched(roots_lam0[1:3], V_lam_0, x_l=0.001, x_r=r_max, dx=dr, condition="($s_{\lambda})$", method='numerov', fig = fig2, ax=axes2[1,0], final=False)
+    if len(roots_lam1) > 0: visualise_eigenstates_stitched(roots_lam1[0:2], V_lam_1, x_l=0.001, x_r=r_max, dx=dr, condition="($p_{\lambda})$", method='numerov', fig = fig2, ax=axes2[1,0], final=True)
+    visualise_f_E(roots_lam0, E_vec, f_E_lam0, condition="($l=0$)", fig = fig2, ax=axes2[1,1], final=False)
+    visualise_f_E(roots_lam1, E_vec, f_E_lam1, condition="($l=1$)", fig = fig2, ax=axes2[1,1], final=True)
+    axes2[1,0].set_title(f'Harmonic Perturbation ($\lambda={lam_val}$)')
+    axes2[1,0].set_xlim(0, 30)
+
+    # Row 2: Non-zero Mu
+    if len(roots_mu0) > 1: visualise_eigenstates_stitched(roots_mu0[1:3], V_mu_0, x_l=0.001, x_r=r_max, dx=dr, condition="($s_{\mu}$)", method='numerov', fig = fig2, ax=axes2[2,0], final=False)
+    if len(roots_mu1) > 0: visualise_eigenstates_stitched(roots_mu1[0:2], V_mu_1, x_l=0.001, x_r=r_max, dx=dr, condition="($p_{\mu}$)", method='numerov', fig = fig2, ax=axes2[2,0], final=True)
+    visualise_f_E(roots_mu0, E_vec, f_E_mu0, condition="($l=0$)", fig = fig2, ax=axes2[2,1], final=False)
+    visualise_f_E(roots_mu1, E_vec, f_E_mu1, condition="($l=1$)", fig = fig2, ax=axes2[2,1], final=True)
+    axes2[2,0].set_title(f'Yukawa Screening ($\mu={mu_val}$)')
+    axes2[2,0].set_xlim(0, 30)
+
+    plt.tight_layout()
+    fig2.savefig('images/P2_degeneracy_breaking_grid.png')
+    plt.close(fig2)
+    log("    Saved Degeneracy Breaking grid to images/P2_degeneracy_breaking_grid.png")
     
-    # plt.title("Stabilised Mismatch Function using Dynamic Turning Points")
-    # plt.show()
+    # Log results of the degeneracy breaking
+    E_2s = roots_l0[1] if len(roots_l0) > 1 else None
+    E_2p = roots_l1[0] if len(roots_l1) > 0 else None
+    E_2s_lam = roots_lam0[1] if len(roots_lam0) > 1 else None
+    E_2p_lam = roots_lam1[0] if len(roots_lam1) > 0 else None
+    E_2s_mu = roots_mu0[1] if len(roots_mu0) > 1 else None
+    E_2p_mu = roots_mu1[0] if len(roots_mu1) > 0 else None
+    
+    if E_2s and E_2p:           log(f"    Normal :\t\t|E_2s - E_2p| = {abs(E_2s - E_2p):.2e}")
+    if E_2s_lam and E_2p_lam:   log(f"    lambda = {lam_val} :\t\t|E_2s - E_2p| = {abs(E_2s_lam - E_2p_lam):.2e}")
+    if E_2s_mu and E_2p_mu:     log(f"    mu = {mu_val} :\t\t|E_2s - E_2p| = {abs(E_2s_mu - E_2p_mu):.2e}")
+
+    results_file.close()
+
+if __name__ == "__main__":
+    MiniProject2()

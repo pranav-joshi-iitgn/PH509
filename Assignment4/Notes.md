@@ -1,4 +1,4 @@
-# Chapter 8 : Time-Dependent Quantum mechanics
+# Chapter 8 : Time-Dependent Quantum Mechanics
 
 ## TDSE
 
@@ -657,7 +657,7 @@ Thus, this method isn't used professionally.
 
 But, for the toy examples we have, I can certainly use it to verify correctness. 
 
-# Chapter 9
+# Chapter 9 : Time Independent Quantum Mechanics
 
 ## Shooting method
 
@@ -964,4 +964,26 @@ def electrostatic_potential_eff(r:(np.ndarray|float), l=0, mu=0, lamb=0, Z=1):
     return (lamb*r*r) + (l*(l+1)/((2*r*r) + 1e-30)) - (Z*np.exp(-mu*r)/(r+1e-30))
 ```
 
+## Shooting method for cental potentials
+
 The function that will be written for the shooting method will accept any potential $V:\mathbb{R}\to \mathbb{R}$ as an input. We will simply pass in `electrostatic_potential_eff` as an input to simulate an atom with atomic number $Z$ and a single electron.
+
+Now, it's worth noting that since we cannot integrate over $r=0$, our interval $[r_l, r_r]$ must lie in the $r>0$ region entirely. This is different from the assumptions we made while developing the Shooting method. In particular, we assumed that $x_l, x_r$ are extreme values, for which the physical solution will have small value and derivative, while the non-physical solution will have values with large magnitudes. Here, though $r_l$ is not an _extreme_, it still has the property we need, namely that the physical solution for $u(r)=rR(r)$ will have a small value (though $R(r)$ may not have small values) and the non-physical solution, which has the asymptotics of $r^{-l}$ will have a large values.
+
+Even then, there's another issue. When we integrate numerically, every step, there is some numerical error $\epsilon$ that gets added to the solution. This noise is auto-regressive, since the noise added prior to a particular step will be amplified by the numbers that $u(r),v(r)$ are multiplied with. If not careful, this can cause the noise to overtake the actual solution and explode. To prevent this, a smaller $\Delta x$ is usually used, at the expense of computational cost. In our case, since there is a singularity at $r=0$, even if the actual solution doesn't explode to infinity, if we start integrating close to the singularity with a $\Delta x$ that is not adequately small, the numerical solution _will_ explode. This effect is particularly promininent near the "classical turning point" $r_c$ where $V_\text{eff}(r_c)-E = 0$, i.e. the inflection point for $u$.
+So, to prevent the noise from over-whelming the numerical solution, we must integrate in the regions $[r_l, r_c]$ and $[r_c, r_r]$ and must have as high accuracy for the step-size as possible. 
+
+Now, with the $O(\Delta x^4)$ accuracy of the Numerov method, we can still use the midpoint $r_m = (r_l+r_r)/2$ as the matching point, rather than $r_c$. 
+
+In fact, _mathematically_ (assuming perfect integrator), it doesn't matter what we choose as the matching point; the $f(E)$ value will remain the same since the two solutions (uniquely determined by initial conditions) remain the same, _and_ the matching loss function is actually a special quantity called the  _Wronskian_. In particular, 
+
+$$
+f(E) = W_E(x_m)= \begin{vmatrix}
+u_E^{\uparrow}(x_m) & u_E^{\downarrow}(x_m) \\
+v_E^{\uparrow}(x_m) & v_E^{\downarrow}(x_m)
+\end{vmatrix}
+$$
+
+This can be shown to be invariant w.r.t $x_m$.
+
+Moreover this quantity is 0 only when the two solutions are linearly dependent, i.e. they are multiples of each other. This is effectively saying that (after normalisation), they are the _same_ solutions (save for a sign flip).
