@@ -485,9 +485,18 @@ For these eigen-energies (and corresponding values of $l$), the eigen-states wer
 def E2n(E):return int(round((-2*E)**-0.5))
 ```
 
-This is because the energy is given by $E_n = -\frac{1}{2n^2}$. The same can be verified from the numbers reported in the labels of the figure. The theoretical values are $E_1 = -0.5$, $E_2 = -0.125$, $E_3=-1/18=-0.05555{\large \bar 5}$
+This is because the energy is given by $E_n = -\frac{1}{2n^2}$. The exact values numerically computed for different sub-shells are :
 
-You can also manually count the number of nodes for each eigenstate as the number of times that curve for $u(r)$ cuts the x-axis (except at $r=0$). As you can easily verify from the plots, this number is always exactly $n-l-1$. For example in the top-left subplot (for the $l=0$ case, i.e. s orbitals), when $n=1$ (blue curve), we have no points (other than $r=0$) where the curve crosses the x-axis. For $n=2$ (2s orbital, orange curve), it happens once, very roughly at $r\approx 2$. For $n=3$, it happens twice, first around 2 and then around 7. Similarly for the $l=1$ case, the $n=3$ curve (orange) cuts the x-axis $n-l-1 = 1$ times (around $r=6$) and the $n=2$ curve doesn't cut. Notice that there is no curve for $n=1$, since we don't have a physical solution for the resultant $E-V_\text{eff}$.
+* 1s: -0.4999985 = -$\frac{1}{2\times 1^2}$ + 1.4894565203982246e-06
+* 2s: -0.1249965 = -$\frac{1}{2\times 2^2}$ + 3.467043051791352e-06
+* 3s: -0.0555466 = -$\frac{1}{2\times 3^2}$ + 8.960942531388572e-06
+* 2p: -0.1249962 = -$\frac{1}{2\times 2^2}$ + 3.781354790802216e-06
+* 3p: -0.0555462 = -$\frac{1}{2\times 3^2}$ + 9.34720833578595e-06
+* 3d: -0.0555472 = -$\frac{1}{2\times 3^2}$ + 8.389867257103945e-06
+
+This gives the transition energy from the $n=2$ shell to $n=1$ as around 0.375001978 in atomic units, which is close to the theoretical value of 0.375. Mutiplying by $E_0 \approx 27.2 \text{eV}$, this corresponds to around $10.20005 \text{eV}$, which is close to the theoretical value of the first Lyman transition energy, i.e. $10.2 \text{eV}$. 
+
+From the figure, you can also manually count the number of nodes for each eigenstate as the number of times that curve for $u(r)$ cuts the x-axis (except at $r=0$). As you can easily verify from the plots, this number is always exactly $n-l-1$. For example in the top-left subplot (for the $l=0$ case, i.e. s orbitals), when $n=1$ (blue curve), we have no points (other than $r=0$) where the curve crosses the x-axis. For $n=2$ (2s orbital, orange curve), it happens once, very roughly at $r\approx 2$. For $n=3$, it happens twice, first around 2 and then around 7. Similarly for the $l=1$ case, the $n=3$ curve (orange) cuts the x-axis $n-l-1 = 1$ times (around $r=6$) and the $n=2$ curve doesn't cut. Notice that there is no curve for $n=1$, since we don't have a physical solution for the resultant $E-V_\text{eff}$.
 
 You can also notice that the energies for the 3s ($E_3,\, l=0$),3p ($E_3,\, l=1$), and 3d ($E_3,\, l=2$) states are all the same ($-0.05\bar 5$). Similarly, those for 2s and 2p states are the same (-0.125). 
 Thus, there is a degeneracy in the energy levels, i.e. for the same eigen-energy, you can have multiple values of $l$. 

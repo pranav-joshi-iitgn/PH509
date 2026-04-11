@@ -309,6 +309,10 @@ def MiniProject2():
     axes1[0,0].set_title('Eigenstates ($l=0$)')
     axes1[0,1].set_title('$f(E)$ Mismatch Function ($l=0$)')
     axes1[0,0].set_xlim(0, 30)
+    log("\n### s sub-shell ($l=0$)\n")
+    for E in roots_l0[:3]:
+        n = E2n(E)
+        log(f"* {n}s:",round(E,7), "=", r"-$\frac{1}{2\times" + str(n) + "^2}$ +", E+1/(2*n*n))
 
     # l=1
     if len(roots_l1) > 0:
@@ -317,6 +321,10 @@ def MiniProject2():
     axes1[1,0].set_title('Eigenstates ($l=1$)')
     axes1[1,1].set_title('$f(E)$ Mismatch Function ($l=1$)')
     axes1[1,0].set_xlim(0, 30)
+    log("\n### p sub-shell ($l=1$)\n")
+    for E in roots_l1[:2]:
+        n = E2n(E)
+        log(f"* {n}p:",round(E,7), "=", r"-$\frac{1}{2\times" + str(n) + "^2}$ +", E+1/(2*n*n))
 
     # l=2
     if len(roots_l2) > 0:
@@ -325,6 +333,10 @@ def MiniProject2():
     axes1[2,0].set_title('Eigenstates ($l=2$)')
     axes1[2,1].set_title('$f(E)$ Mismatch Function ($l=2$)')
     axes1[2,0].set_xlim(0, 30)
+    log("\n### d sub-shell ($l=2$)\n")
+    for E in roots_l2[:1]:
+        n = E2n(E)
+        log(f"* {n}d:",round(E,7), "=", r"-$\frac{1}{2\times" + str(n) + "^2}$ +", E+1/(2*n*n))
 
     plt.tight_layout()
     fig1.savefig('images/P2_normal_states_grid.png')
