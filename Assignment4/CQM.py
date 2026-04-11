@@ -1241,5 +1241,5 @@ def MiniProject3():
 
 if __name__ == "__main__": 
     print("-"*15 + "   starting simulations   " + "-"*15)
-    MiniProject3()
+    MiniProject1()
     print("-"*15 + " all simulations finished " + "-"*15)
