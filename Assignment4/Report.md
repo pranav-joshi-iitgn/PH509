@@ -496,6 +496,57 @@ For a more accurate analysis, the differences in the energy levels closest to 2s
 As you can see, there is significantly more difference between the energy levels of these states when the potential is modified. This is even clearer when $n=3$ is considered (see figure for the energy values).
 The little bit of difference between the energy states fir the un-modified potential is due to small numerical errors and can be considered noise. 
 
+## Part (g) : $\braket{r}$ and $\braket{1/r}$
+
+Forcing the normalisation condition
+
+$$
+\int_{-\infty}^\infty u^2(r)dr = 1
+$$
+
+we get the expectation equation :
+
+$$
+\braket{g(r)} = \int_{-\infty}^\infty g(r)u^2(r)dr
+$$
+
+Or effectively, without forcing any normalisation, we have :
+
+$$
+\braket{g(r)} = \frac{\int_{-\infty}^\infty g(r)u^2(r)dr}{\int_{-\infty}^\infty u^2(r)dr}
+$$
+
+After obtaining the numerical solution for $u(r)$, we can easily estimate $\braket{g(r)}$ for any $g$ that has the property that $u^2(r)g(r) \to 0$ as $r\to 0$ and as $r\to \infty$. As it turns out, the function $g(r)=r$ and $g(r)=1/r$ have this property.
+Note that for $\braket{1/r}$, since $g(r)=1/r \to 0$ as $r\to \infty$, ignoring the integration for the $[r_r, \infty)$ part doesn't cause major error. But ignoring the integration in the region $(0,r_l]$ does cause some errors, though not enough to completely throw off the estimate.
+Thus, numerically integrating $ru^2$ and $\frac{1}{r}u^2 = rR^2$ over the $[x_l, x_r]$ region, we get these values :
+
+| State | $\braket{r}$ | $\braket{1/r}$ |
+| ----- | ------------- | -------------- |
+| 1s    | 1.50785   | 0.99220 |        
+| 2s    | 6.02084   | 0.24870 |        
+| 2p    | 4.99987   | 0.25001 |        
+| 3s    | 13.53564  | 0.11067 |        
+| 3p    | 12.49742  | 0.11114 |        
+| 3d    | 10.49810  | 0.11113 |        
+
+These are close to the theoretical values of:
+
+$$
+\braket{r} = \frac{1}{2}[3n^2 - l(l+1)] \\
+\braket{1/r} = 1/n^2
+$$
+
+Using these formulae, the same table would be populated as :
+
+| State | $\braket{r}$ | $\braket{1/r}$ |
+| ----- | ------------- | -------------- |
+| 1s | 1.50000  | 1.00000 |
+| 2s | 6.00000  | 0.25000 |
+| 2p | 5.00000  | 0.25000 |
+| 3s | 13.50000 | 0.11111 |
+| 3p | 12.50000 | 0.11111 |
+| 3d | 10.50000 | 0.11111 |
+
 # Problem 3: 2D Quantum Scattering
 
 ## Part (a): Boundary Conditions and Normalization
