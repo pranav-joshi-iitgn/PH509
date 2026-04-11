@@ -261,6 +261,9 @@ The wave-packet also spreads in position with time (see GIF animation), similar 
 # Problem 2: Radial Schrodinger equation for the hydrogen atom
 
 ## Part (a): Effective Potential
+
+
+
 ## Part (b): Bound-State Energies
 ## Part (c): Radial Wavefunctions
 ## Part (d): Energy Degeneracy
