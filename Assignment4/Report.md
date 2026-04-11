@@ -1,3 +1,15 @@
+<style>
+  img {
+    max-height: 500px;
+    height: auto;
+    display: block !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin: 1em 0;
+  }
+</style>
+
+
 # Project 1: Time-dependent evolution of a Gaussian wavepacket in 1D
 
 ## Part (a): Numerical Method
