@@ -289,6 +289,22 @@ def visualise_eigenstates_stitched(roots, V_func, x_l, x_r, dx=0.001, condition=
         
     return fig, ax
 
+def compute_expectation(g, r, u):
+    """
+    Computes the expectation value <g(r)> for a given radial wavefunction u(r).
+    As per the derived notes, this is given by:
+    <g> = integral(g(r) * u^2 * dr) / integral(u^2 * dr)
+    """
+    # Calculate the integrand for the numerator and denominator
+    numerator_integrand = g(r) * (u ** 2)
+    denominator_integrand = u ** 2
+    
+    # Integrate using the trapezoidal rule
+    numerator = np.trapz(numerator_integrand, r)
+    denominator = np.trapz(denominator_integrand, r)
+    
+    return numerator / denominator
+
 def MiniProject2():
     """
     Executes the computations and visualizations for Problem 2 of the PH509 assignment.
@@ -431,6 +447,54 @@ def MiniProject2():
     if E_2s and E_2p:           log(f"    Normal :\t\t|E_2s - E_2p| = {abs(E_2s - E_2p):.2e}")
     if E_2s_lam and E_2p_lam:   log(f"    lambda = {lam_val} :\t\t|E_2s - E_2p| = {abs(E_2s_lam - E_2p_lam):.2e}")
     if E_2s_mu and E_2p_mu:     log(f"    mu = {mu_val} :\t\t|E_2s - E_2p| = {abs(E_2s_mu - E_2p_mu):.2e}")
+
+    # --- Compute <r> and <1/r> ---
+    log("\n>>> Stage: Computing Expectation Values <r> and <1/r>")
+    log(f"{'State':<10} | {'<r>':<15} | {'<1/r>':<15}")
+    log("-" * 45)
+    
+    # Helper to generate un-normalized stitched arrays cleanly for expectation calculations
+    def get_stitched_u(E, V_func):
+        x_l, x_r = 0.001, r_max
+        N_total = int(np.abs(x_r - x_l) / dr) + 1
+        x_vals = np.linspace(x_l, x_r, N_total)
+        V_arr = V_func(x_vals)
+        allowed_indices = np.where(E > V_arr)[0]
+        match_idx = allowed_indices[-1] if len(allowed_indices) > 0 else N_total // 2
+        x_m = x_vals[match_idx]
+        
+        x_fwd, u_fwd = numerov_solve(x_l, x_m, dr, V_func, E)
+        x_bwd, u_bwd = numerov_solve(x_r, x_m, -dr, V_func, E)
+        
+        x_bwd, u_bwd = x_bwd[::-1], u_bwd[::-1]
+        scale_factor = u_fwd[-1] / u_bwd[0]
+        u_bwd_scaled = u_bwd * scale_factor
+        
+        r_stitched = np.concatenate((x_fwd, x_bwd[1:]))
+        u_stitched = np.concatenate((u_fwd, u_bwd_scaled[1:]))
+        return r_stitched, u_stitched
+
+    g_r = lambda r: r
+    g_1_over_r = lambda r: 1.0 / r
+
+    states_to_compute = [
+        ("1s", roots_l0, 0, V_0),
+        ("2s", roots_l0, 1, V_0),
+        ("2p", roots_l1, 0, V_1),
+        ("3s", roots_l0, 2, V_0),
+        ("3p", roots_l1, 1, V_1),
+        ("3d", roots_l2, 0, V_2)
+    ]
+
+    for name, roots, idx, V_func in states_to_compute:
+        if len(roots) > idx:
+            E_val = roots[idx]
+            r_arr, u_arr = get_stitched_u(E_val, V_func)
+            
+            exp_r = compute_expectation(g_r, r_arr, u_arr)
+            exp_1_over_r = compute_expectation(g_1_over_r, r_arr, u_arr)
+            
+            log(f"{name:<10} | {exp_r:<15.5f} | {exp_1_over_r:<15.5f}")
 
     results_file.close()
 
