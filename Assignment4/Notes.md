@@ -251,7 +251,7 @@ Note that although I denote the basis functions as $\psi_E$, there can actually 
 
 ## "Split operator" method
 
-Take a loot at this equation :
+Take a look at this equation :
 
 $$
 e^{i\frac{t}{2}\hat H/\hbar}\psi_t = \psi_{t/2}= e^{-i\frac{t}{2}\hat H/\hbar}\psi_0

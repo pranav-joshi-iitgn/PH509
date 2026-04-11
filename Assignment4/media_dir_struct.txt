@@ -1,0 +1,29 @@
+media
+├── P1
+│   ├── Part_B_Free_k0_2.gif
+│   ├── Part_B_Free_k0_2_summary.png
+│   ├── Part_C_Harmonic_k0_0.gif
+│   ├── Part_C_Harmonic_k0_0_summary.png
+│   ├── Part_D_Harmonic_k0_2.gif
+│   ├── Part_D_Harmonic_k0_2_summary.png
+│   ├── Part_E_Convergence.png
+│   ├── Part_F_Linear_k0_0.gif
+│   └── Part_F_Linear_k0_0_summary.png
+├── P2
+│   ├── P2a_V_eff.png
+│   ├── P2_degeneracy_breaking_grid.png
+│   └── P2_normal_states_grid.png
+└── P3
+    ├── scatterer_2d_convergence.png
+    ├── scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif
+    ├── scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif
+    ├── scatterer_2d__R_3__k_x_2__sigma_1__V_0_0.gif
+    ├── scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif
+    ├── scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif
+    ├── scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif
+    ├── scatterer_2d_summary__R_0.3__k_x_2__sigma_1__V_0_1.png
+    ├── scatterer_2d_summary__R_1__k_x_2__sigma_1__V_0_1.png
+    ├── scatterer_2d_summary__R_3__k_x_2__sigma_1__V_0_0.png
+    ├── scatterer_2d_summary__R_3__k_x_2__sigma_1__V_0_-1.png
+    ├── scatterer_2d_summary__R_3__k_x_2__sigma_1__V_0_1.png
+    └── scatterer_2d_summary__R_3__k_x_5__sigma_1__V_0_1.png

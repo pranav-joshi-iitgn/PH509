@@ -266,11 +266,11 @@ def simulate_1D(
     # --- UPDATED: Metrics Helper Function ---
     def get_metrics(psi, phi, k_arr, x_arr):
         dk = k_arr[1] - k_arr[0]
-        norm_x = np.sum(np.abs(psi)**2) * dx
-        norm_k = np.sum(np.abs(phi)**2) * dk
-        exp_x = np.sum(x_arr * np.abs(psi)**2) * dx
-        exp_p = np.sum(k_arr * np.abs(phi)**2) * dk
-        exp_H = np.sum(0.5 * k_arr**2 * np.abs(phi)**2) * dk + np.sum(V_x * np.abs(psi)**2) * dx
+        norm_x = np.sum(dx * np.abs(psi)**2)
+        norm_k = np.sum(dk * np.abs(phi)**2)
+        exp_x = np.sum(dx * x_arr * np.abs(psi)**2)
+        exp_p = np.sum(dk * k_arr * np.abs(phi)**2)
+        exp_H = np.sum(dk * 0.5 * k_arr**2 * np.abs(phi)**2) + np.sum(dx * V_x * np.abs(psi)**2)
         
         # Most probable values
         x_p = x_arr[np.argmax(np.abs(psi)**2)]
@@ -286,7 +286,8 @@ def simulate_1D(
     history = {
         't': np.zeros(steps), 'norm_x': np.zeros(steps), 'norm_k': np.zeros(steps),
         'exp_x': np.zeros(steps), 'exp_p': np.zeros(steps), 'exp_H': np.zeros(steps),
-        'x_p': np.zeros(steps), 'k_p': np.zeros(steps), 'x_c': np.zeros(steps)
+        'x_p': np.zeros(steps), 'k_p': np.zeros(steps),
+        'x_c': np.zeros(steps), 'p_c': np.zeros(steps)
     }
     
     classical_state = {
@@ -385,6 +386,7 @@ def simulate_1D(
         history['exp_x'][frame], history['exp_p'][frame], history['exp_H'][frame] = e_x, e_p, e_H
         history['x_p'][frame], history['k_p'][frame] = x_p, k_p
         history['x_c'][frame] = x_c
+        history['p_c'][frame] = p_c
         
         return psi_curr, phi_curr, n_x, n_k, e_x, e_p, e_H, x_p, k_p, x_c, p_c
 
@@ -482,6 +484,8 @@ def plot_static_results(history, condition="",
     if final:
         if (F_func is not None):
             ax_x.plot(t, history['x_c'], color='black', label=f'$x_c$ (Classical)')
+            if 'p_c' in history:
+                ax_p.plot(t, history['p_c'], color='black', label=f'$p_c$ (Classical)')
         
         ax_x.set_ylabel("$x$")
         ax_x.grid(True, alpha=0.3)
@@ -521,7 +525,7 @@ def MiniProject1():
             "k0": 2.0, 
             "V_func": lambda x: np.zeros_like(x), 
             "F_func": lambda x: np.zeros_like(x), 
-            "frames": 100, "dx": 0.1, "dt": 0.004
+            "frames": 50, "dx": 0.1, "dt": 0.004
         },
         {
             "name": "Part_C_Harmonic_k0_0", 
@@ -529,7 +533,7 @@ def MiniProject1():
             "k0": 0.0, 
             "V_func": harmonic_potential, 
             "F_func": harmonic_force, 
-            "frames": 100, "dx": 0.1, "dt": 0.004
+            "frames": 200, "dx": 0.1, "dt": 0.004
         },
         {
             "name": "Part_D_Harmonic_k0_2", 
@@ -537,7 +541,7 @@ def MiniProject1():
             "k0": 2.0, 
             "V_func": harmonic_potential, 
             "F_func": harmonic_force, 
-            "frames": 100, "dx": 0.1, "dt": 0.004
+            "frames": 200, "dx": 0.1, "dt": 0.004
         },
         {
             "name": "Part_F_Linear_k0_0", 
@@ -545,7 +549,7 @@ def MiniProject1():
             "k0": 0.0, 
             "V_func": linear_potential, 
             "F_func": linear_force, 
-            "frames": 50, "dx": 0.1, "dt": 0.004
+            "frames": 70, "dx": 0.1, "dt": 0.004
         }
     ]
     
@@ -561,7 +565,7 @@ def MiniProject1():
             F_func=run['F_func'], 
             psi_0_func=psi_init,
             dx=run['dx'], dt=run['dt'], 
-            x_left=-15.0, x_right=15.0,
+            x_left=-10.0, x_right=10.0,
             frames=run['frames'], 
             animation_frame_scaling=10, 
             methods=["SDLF",'split-operator'],           
