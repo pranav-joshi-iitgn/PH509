@@ -1,4 +1,4 @@
-# Problem 1: Time-dependent evolution of a Gaussian wavepacket in 1D
+# Project 1: Time-dependent evolution of a Gaussian wavepacket in 1D
 
 ## Part (a): Numerical Method
 
@@ -258,7 +258,7 @@ The wave-packet also spreads in position with time (see GIF animation), similar 
 
 ![Curves for $x_c(t)$ and $\braket{x}(t)$](media/P1/Part_F_Linear_k0_0_summary.png)
 
-# Problem 2: Radial Schrodinger equation for the hydrogen atom
+# Project 2: Radial Schrodinger equation for the hydrogen atom
 
 ## Part (a): Effective Potential
 
@@ -547,7 +547,7 @@ Using these formulae, the same table would be populated as :
 | 3p | 12.50000 | 0.11111 |
 | 3d | 10.50000 | 0.11111 |
 
-# Problem 3: 2D Quantum Scattering
+# Project 3: 2D Quantum Scattering
 
 ## Part (a) : Numerical method
 
