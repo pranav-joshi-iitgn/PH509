@@ -661,7 +661,8 @@ def step_potential_2d(X, Y, step_pos_x=0.0, v_left=0.0, v_right=1.0):
 
 def disk_potential_2d(X, Y, R=1.5, center_x=0.0, center_y=0.0, v_out=0.0, v_in=1.0):
     """Returns a 2D disk potential with radius R """
-    return np.where(((X-center_x)**2 + (Y-center_y)**2) < R**2 + epsilon, v_out, v_in)
+    epsilon = 1e-10
+    return np.where(((X-center_x)**2 + (Y-center_y)**2) < R**2 + epsilon, v_in, v_out)
 
 def harmonic_potential_2d(X, Y, omega_x=1.0, omega_y=1.0):
     """Returns a 2D harmonic oscillator potential."""
@@ -1240,5 +1241,5 @@ def MiniProject3():
 
 if __name__ == "__main__": 
     print("-"*15 + "   starting simulations   " + "-"*15)
-    MiniProject1()
+    MiniProject3()
     print("-"*15 + " all simulations finished " + "-"*15)

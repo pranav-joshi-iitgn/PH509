@@ -549,11 +549,178 @@ Using these formulae, the same table would be populated as :
 
 # Problem 3: 2D Quantum Scattering
 
+## Part (a) : Numerical method
+
+We can extend the split operator method to 2D by assuming $\Delta y = \Delta x$ and defining 
+
+$$
+a(x,y) = \frac{4m\Delta  x^2}{t\hbar}i - \frac{2m\Delta  x^2}{\hbar^2}V(x,y) -4 \\
+b(x,y) = \frac{4m\Delta x^2}{t\hbar}i + \frac{2m\Delta x^2}{\hbar^2}V(x,y) + 4
+$$
+
+and writing
+
+$$
+\begin{bmatrix}
+0 & 1 & 0 \\
+1 & a(x) & 1 \\
+0 & 1 & 0
+\end{bmatrix} 
+\circ
+\begin{bmatrix}
+\psi_t(x+\Delta x,y+\Delta y) & \psi_t(x,y+\Delta y) & \psi_t(x-\Delta x,y+\Delta y) \\
+\psi_t(x+\Delta x,y) & \psi_t(x,y) & \psi_t(x-\Delta x,y) \\
+\psi_t(x+\Delta x,y-\Delta y) & \psi_t(x,y-\Delta y) & \psi_t(x-\Delta x,y-\Delta y) \\
+\end{bmatrix} \\
+= \\
+\begin{bmatrix}
+0 & -1 & 0 \\
+-1 & b(x) & -1 \\
+0 & -1 & 0
+\end{bmatrix} 
+\circ
+\begin{bmatrix}
+\psi_0(x+\Delta x,y+\Delta y) & \psi_0(x,y+\Delta y) & \psi_0(x-\Delta x,y+\Delta y) \\
+\psi_0(x+\Delta x,y) & \psi_0(x,y) & \psi_0(x-\Delta x,y) \\
+\psi_0(x+\Delta x,y-\Delta y) & \psi_0(x,y-\Delta y) & \psi_0(x-\Delta x,y-\Delta y) \\
+\end{bmatrix} 
+$$
+
+Solving this is going to be a nightmare.
+
+So instead, we approximate even more, giving us what is known as the _Alternat Direction Implicit_ method. 
+
+Here, we split the hamiltonian operator as $\hat H = \hat H_x + \hat H_y$ where 
+
+$$
+\hat H_x = -\frac{\hbar^2 \hat p_x^2}{2m} + V_x(x,y) \\
+\hat H_y = -\frac{\hbar^2 \hat p_y^2}{2m} + V_y(x,y)
+$$
+
+It it's possible to separate the potential as $V(x,y) = V_x(x) + V_y(y)$, we can simply split it. Otherwise, we can do $V_x = V_y = V/2$
+
+Now, for the method, we discretise the wave-function over a grid, giving us the matrix $\Psi[y,x]$. Just like before, we create the tri-diagonal matrices (using $t/2$ rather than $t$), but now for each dimension separately. Then we solve :
+
+$$
+A_{x}(y)\Psi_{t/2}[y] = B_x(y)\Psi_0[y]
+$$
+
+for all $y$ and then
+
+$$
+A_y(x)\Psi_{t}^T[x] = B_y(x)\Psi_{t/2}^T[x]
+$$
+
+for all $x$.
+
+This effectively takes $O(MN)$ operations each iteration, assuming the grid is $M\times N$ points big.
+
+Note that this analysis was done for the physical 2D TDSE, which is :
+
+$$
+-\frac{\hbar^2}{2m}\nabla^2 \psi + V \psi = i\hbar \frac{\partial}{\partial t}\psi 
+$$
+
+The $A_x(y)$ and $B_y(x)$ need to be translated to the adimensional versions (as done in `CQM.py`) for implementation. 
+
+As suggested in the assignment, the grid will have $x,y \in [-20,20]$ and $\Delta y = \Delta x = 0.1$. We will have $\Delta t = 0.003$ for all the animations created (and the respective plots).
+
 ## Part (a): Boundary Conditions and Normalization
+
+Similar to the 1D case, we use perfectly reflecting boundaries that have $\psi=0$ at all times. 
+For normalisation, we will ensure that
+
+$$
+N_{\vec x}(t) = \braket{\psi_t | \psi_t} \approx \Delta x^2\sum_x\sum_y \psi_t[x,y] = 1 + \epsilon_t
+$$
+
+where $\epsilon_t$, the error, is a small quantity, arising from rounding and discretization errors. 
+Just like before, we will plot $N_{\vec x}(t)$ as a function of time/step. 
+We will also compute the 2D FFT of $\psi_t$, giving the momentum wave-function $\phi_t$ and its norm $N_{\vec p}(t) = \braket{\phi_t| \phi_t}$.
+
+As suggested in the assignment, the wave-packet will be centered at $(-8,0)$ and have an initial momentum $k_x$ to the right (with $k_y=0$). The wave-packet will be gaussian and have the spread of $\sigma=1$ in either direction, which is much smaller than the grid's dimensions and will prevent the boundary affecting the simulation.  
+
 ## Part (b): Free Propagation
-## Part (c): Repulsive Barrier
-## Part (d): Parameter Variations
+
+![Free Particle](media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_0.gif)
+
+![Checking normalisation preservation](media/P3/scatterer_2d_summary__R_3__k_x_2__sigma_1__V_0_0.png)
+
+Once again, as you can see, towards the end of the simulation, the momentum in $x$ directon starts to change (invert, more specifically). This is due to the reflection of the wave-packet by the right boundary of the grid.
+
+Also notice how the norm $\braket{\psi|\psi}$ stays close to 1, with variation being on the order of $10^{-12}$
+
+## Part (c) and (f): Repulsive Barrier and classical shadow region
+
+![Repulsive Barrier](media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
+
+![Changes in momentum and position](media/P3/scatterer_2d_summary__R_3__k_x_2__sigma_1__V_0_1.png)
+
+You can see in the animation that after the wave-packet encounters the repulsive disk potential, there is a wavefront (a little after the first thin reflection) travelling to the left. This is the reflected wave. 
+Notice that there is some of the incident probability mass that actually goes inside and beyond the disk, i.e. in the region where $x>R=3$ and $y\in [-R/2,R/2] = [-1.5, 1.5]$. This is the classical "shadow region". No classical particle with momentum purely along x-axis would ever be able to reach the shadow region. And of course, classically, no particle will be able to enter the disk. But here we see that a _quantum_ particle/wave (or something close to a particle) is able to enter the disk and go beyond it into the shadow region. In wave-mechanics terms, this is the transmitted wave, and is a very standard phenomenon to see. 
+
+You can also see (in the animation) the most probable and mean positions overlayed on the heat-map for $|\psi|^2$ as well as the most probable and mean momentums overlayed on the heat-map for the squared magnitude of the momentum wavefunction, i.e. $|\phi|^2(\vec k)$. 
+
+Notice how the mean momentum barely shifts and how the momentum wavefunction, at one point, has a hole in the place where the mean momentum is, indicating scattering of the particle into many different directions. 
+
 ## Part (e): Angular Distribution
+
+The assignment asks to compute $P(\theta) = \int |\psi(r,\theta)|^2 r dr$ "far from the scatterer" and to "interpret it as a numerical cross section". This part was confusing for these reasons :
+
+1. The integral isn't an area integral, but rather a line integral.
+2. If the interval over which we are integrating is too small, we will get significant values only when the particle is passing through the region, which will not be sufficient to understand the physics of scattering. 
+
+So, I have made a few modifications :
+
+1. I consider wide sectors (centered at given $\theta_m$) with angular width of $\Delta \theta = 10^o = \frac{\pi}{18}$ which are then further cropped so that $r\in [r_m-\Delta r, r_m + \Delta r]$ where $\Delta r$ is a large value. I then compute the area integral of $|\psi|^2$ over these regions giving $P(\theta_m|r_m, \Delta r, \Delta \theta)$ 
+2. To make sure a good amount of the probability mass is captured, I have kept $r_m=13$ and $\Delta r = 7$ (in atomic units). 
+
+
+
+For this section, refer back to the animation in part (c). 
+These $r_m-\Delta r$ and $r_m + \Delta r$ values are highlighted as white concentric circles in the first subplot of the animation.
+The resultant values of $P(\theta_m)$ are plotted on the radial plot in bottom right subplot of the animation, with a square root taken to somewhat compress the dynamic range and help in visualisation. 
+
+## Part (d): Parameter Variations
+
+### $R=1$
+
+![$R=1, \sigma=1, k_x=2$ animation](media/P3/scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
+
+![$R=1, \sigma=1, k_x=2$ plots](media/P3/scatterer_2d_summary__R_1__k_x_2__sigma_1__V_0_1.png)
+
+With a smaller $R$, less of the probability mass is directly reflected back, and surprisingly, less probability mass is directly transmitted. Rather, it seems that wave is converted into 2 waves going travelling diagonally to the right, which then interfere when they spread. The shape of the $P(\theta)$ plot after the encounter with the disk is also different, with the central peak we previously saw missing. 
+
+### $R=0.3$
+
+![$R=0.3, \sigma=1, k_x=2$ animation](media/P3/scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
+
+![$R=0.3, \sigma=1, k_x=2$ plots](media/P3/scatterer_2d_summary__R_0.3__k_x_2__sigma_1__V_0_1.png)
+
+With an even smaller $R$, the shape of $P(\theta)$ after the encounter with the disk entirely changes to a more circular shape. Moreover, there is little to no change in the momentum wave-function before and after the encounter. Most likely the two diagonally travelling wavefronts we saw in the $R=1$ case are spreading more rapidly and interfering earlier in the shadow region. Thus, the probability mass in the shadow region isn't due to the transmitted wave, but rather interference of the deflected wavefronts.
+
+### $k_x=5$
+
+![$R=3, \sigma=1, k_x=5$ animation](media/P3/scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
+
+![$R=3, \sigma=1, k_x=5$ plots](media/P3/scatterer_2d_summary__R_3__k_x_5__sigma_1__V_0_1.png)
+
+The interesting thing to notice is that when $k_x=5$, the particle entirely bypasses the repulsive disk. It is effectively going _over_ the disk, because it has a _much_ higher energy (around 13) than the potential of the disk (just 1). 
+
 ## Part (f): Attractive Potential
+
+![Attractive potential](media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
+
+![Position and Momentum for attractive disk potential](media/P3/scatterer_2d_summary__R_3__k_x_2__sigma_1__V_0_-1.png)
+
+Unlike the repulsive potential where most of the probability mass is reflected back, for an attractive potential, most is transmitted through, although there is some that is reflected back. 
+Similar to the decrease in momentum we saw when the particle entered the region with higher potential, here we see an _increase_ in the average momentum. 
+Just like last time, at the end of the simulation, we start seeing the effect of the reflective boundary.
+
 ## Part (g): Convergence Tests
-## Part (h): Comparison with Classical Expectation
+
+![$\braket{\vec p}, \braket{\vec x}$ curves for different $\Delta x, \Delta t$](media/P3/scatterer_2d_convergence.png)
+
+From the figure, we can gather than even after increaseing $\Delta t$ to 0.1 and increasing $\Delta x$ to 0.2, the numerical solution is accurate. 
+
+Only when we increase $\Delta$ to 0.5 do we start getting inaccuracies. Even then, the general shape of the solution is the same. 
