@@ -262,12 +262,239 @@ The wave-packet also spreads in position with time (see GIF animation), similar 
 
 ## Part (a): Effective Potential
 
+Consider the 3D ATDSE with a central attractive potential $V(r)$ where $r = |r|$:
 
+$$
+-\frac{1}{2}\nabla^2\psi(\vec r, t) + V(r)\psi(\vec r,t) = i\frac{\partial }{\partial t}\psi(\vec r, t)
+$$
 
-## Part (b): Bound-State Energies
-## Part (c): Radial Wavefunctions
-## Part (d): Energy Degeneracy
+We can, as always, convert this to a time-independent equation as :
+
+$$
+-\frac{1}{2}\nabla^2\psi(\vec r) + V(r)\psi(\vec r) = E\psi(\vec r)
+$$
+
+Now, futher doing a separation of variables as $\psi(\vec r) = R(r)Y(\alpha, \beta)$ (where $\alpha$ is the angle from the z axes and $\beta$ is the polar angle in the x-y plane) and using the spherical coordinate version of the laplacian, i.e.
+
+$$
+\nabla^2 = \frac{1}{r^2}\frac{\partial}{\partial r} r^2 \frac{\partial}{\partial r}
++ \frac{1}{r^2}\frac{1}{\sin \alpha}\frac{\partial}{\partial \alpha} \sin \alpha \frac{\partial}{\partial \alpha}
++ \frac{1}{r^2}\frac{1}{\sin^2 \alpha}\frac{\partial^2}{\partial \beta^2}
+$$
+
+we can write :
+
+$$
+\nabla^2 \psi(\vec r) = 
+[\frac{1}{r^2} \frac{\partial }{\partial r} r^2 \frac{\partial}{\partial r} R]Y 
++ [\frac{1}{r^2}R][\frac{1}{\sin \alpha}\frac{\partial}{\partial \alpha} \sin \alpha \frac{\partial}{\partial \alpha} Y 
++ \frac{1}{\sin^2 \alpha}\frac{\partial^2}{\partial \beta^2} Y] 
+= 2(V(r)-E)RY
+$$
+
+For the cases where $\psi \ne 0, r \ne 0$, we can write :
+
+$$
+[\frac{1}{R} \frac{\partial }{\partial r} r^2 \frac{\partial}{\partial r} R] 
++ [\frac{1}{Y}\frac{1}{\sin \alpha}\frac{\partial}{\partial \alpha} \sin \alpha \frac{\partial}{\partial \alpha} Y 
++ \frac{1}{Y}\frac{1}{\sin^2 \alpha}\frac{\partial^2}{\partial \beta^2} Y] = 2r^2(V(r)-E) \\ \implies \\
+\frac{1}{Y}\frac{1}{\sin \alpha}\frac{\partial}{\partial \alpha} \sin \alpha \frac{\partial}{\partial \alpha} Y 
++ \frac{1}{Y}\frac{1}{\sin^2 \alpha}\frac{\partial^2}{\partial \beta^2} Y 
+= 2r^2(V(r)-E) 
+- \frac{1}{R} \frac{\partial }{\partial r} r^2 \frac{\partial}{\partial r} R
+$$
+
+Clearly, since LHS and RHS are functions of different coordinates, they must both be a constant, say some $L$. This gives :
+
+$$
+LR = 2r^2R(V-E) - \frac{d}{dr}r^2 \frac{d}{dr}R \\
+LY\sin^2\alpha = \sin\alpha \frac{\partial}{\partial \alpha} \sin\alpha \frac{\partial}{\partial \alpha} Y + \frac{\partial^2}{\partial \beta^2}Y
+$$
+
+Now, as we have arbitrary scaling for each part, we can WLOG assume that the angular part is normalised. 
+Essentially, we require :
+
+$$
+\int_{r=-\infty}^\infty\int_\alpha\int_\beta R(r)^2Y^2(\alpha,\beta) r^2\sin\alpha dr d\alpha d\beta = 1 \\\implies
+[\int_{-\infty}^\infty R^2(r)r^2 dr][\int_{\alpha}\int_\beta Y^2(\alpha,\beta) \sin\alpha d\alpha d\beta] =1
+$$
+
+By ensuring that
+
+$$
+\int_{\alpha}\int_\beta Y^2(\alpha,\beta) \sin\alpha d\alpha d\beta =1
+$$
+
+we can then have the normalisation
+
+$$
+\int_{-\infty}^\infty R^2(r)r^2 dr =1
+$$
+
+We can, in fact solve for $Y$ entirely without knowing what $V$ is. The solution has basis functions of form $Y_{m,l}$ where $m,l$ are integers. These are called the the azimuthal quantum number and the angular momentum quantum number. This derivation is carried out in detail in `Notes.md`. But since we are only interested in the radial part, the only thing that we take from the results of that derivation is $L - l(l+1)$. 
+
+Now, substituting $L = -l(l+1)$ back into the equation for $R$, we get :
+
+$$
+-l(l+1)R = 2r^2R(V-E) - \frac{d}{dr}r^2 \frac{d}{dr}R
+$$
+
+Define $u(r)=rR(r) \implies R = u/r$, giving us :
+
+$$
+-l(l+1)\frac{u}{r} = 2ru(V-E) - \frac{d}{dr} (ru' -u) \\\implies
+-l(l+1)u = 2r^2u(V-E) - r (ru'' + u' - u') \\\implies
+\boxed{u''(r) = (2(V(r)-E) +\frac{l(l+1)}{r^2}) \,u(r)}
+$$
+
+This is accompanied by the normalisation condition
+
+$$
+\int_{-\infty}^\infty u^2(r)dr = 1
+$$
+
+and the expectation equation (assuming normalisation is done) :
+
+$$
+\braket{g(r)} = \int_{-\infty}^\infty g(r)u^2(r)dr
+$$
+
+Now, consider the a-dimensionalised electrostratic potential for an electron in some shell of a hydrogen atom, i.e. $V(r) = -1/r$. Plugging that in, we get :
+
+$$
+u''(r) = (-2E - \frac{2}{r} + \frac{l(l+1)}{r^2}) u(r) \iff\\
+\boxed{-\frac{1}{2} \frac{d^2}{dr^2} u(r) + [\frac{l(l+1)}{2r^2} - \frac{1}{r}]u(r) = Eu(r)}
+$$
+
+The boxed equation is what the assignment refers to as the "radial equation" (though it's using $u = rR$ and not $R$).
+
+Define 
+
+$$
+V_\text{eff}(r) = V(r) +  \frac{l(l+1)}{2r^2}
+$$
+
+This can be interpreted as the **potential in a rotating reference frame with angular momentum of $\sqrt{l(l+1)}$**. We had the same thing during planetary motion. 
+
+For the electrostatic potential of hydrogen, we have :
+
+$$
+V_\text{eff}(r) = -\frac{1}{r} +  \frac{l(l+1)}{2r^2}
+$$
+
+This function is plotted for several different values of $l$ in the figure.
+
+![$V_\text{eff}$ for different values of $l$](media/P2/P2a_V_eff.png)
+
+Using this, we can rewrite the equation as :
+
+$$
+u''(r) = 2(V(r)-E) u(r) \iff \\
+-\frac{1}{2}\frac{d^2}{dr^2} u(r) + V_\text{eff} u(r) = E u(r)
+$$
+
+This is similar to the usual TISE formulation, although $u(r)$ is not really the wave function we want to finally be solving for. 
+And again, similar to planetary motion, we can have bound states if $E < V_\text{eff}$, meaning that the particle that the wavefunction represents is (classically) trapped in a potential well. However, note that the shape of the wavefunction (given by $|\psi|^2$) doesn't change at all with time. The condition that $E < V_\text{eff}$ is for the equation to have a physical solution.
+
+Since the assignment asks to modify the potential in one of the parts, let us consider a more general potential of 
+
+$$
+V(r) = -\frac{Ze^{-\mu r}}{r} + \lambda r^2 \\\implies
+V_\text{eff}(r) = -\frac{Ze^{-\mu r}}{r} + \lambda r^2 + \frac{l(l+1)}{2r^2}
+$$
+
+This is what we will use for the implementation. Namely, we will have the function:
+
+```python
+def electrostatic_potential_eff(r:(np.ndarray|float), l=0, mu=0, lamb=0, Z=1):
+    return (lamb*r*r) + (l*(l+1)/(2*r*r)) - (Z*np.exp(-mu*r)/r)
+```
+
+## Part (b),(c),(d) : Shooting method and Bound-State Energies
+
+### Theory and design
+
+In general, the (1D) ATISE has 2 _mathematical_ basis solutions for any $E < 0$; one physical (like we saw) and other _non-physical_ which _grows_ exponentially on the tails.
+
+Define $x_m = \frac{1}{2}(x_r + x_l)$.
+Then, one can get a mathematically unique solution for $[x_m, \infty)$ by setting $u_E(x_r)=0$ and $u_E'(x_r)=v_r$. This will be a linear combination of the physical solution that decays to 0 as $x\to \infty$ and the non-phyiscal solution that explodes $\infty$ instead. Now, by setting $v_r$ as a very small value, the coefficient for the non-physical solution will be small (assuming $x_r$ is large enough) and thus the contribution of the non-physical solution at $x_m$ will be small. 
+This means, that we will effectively recover the value of the _physical_ solution as $x_m$. The same goes for the derivative $u_E'$ too (the non-physical solution's contribution to the derivative will be small at $x_m$). 
+Similarly, if we solve for $(-\infty, x_m]$, with $u_E(x_l)=0$ and $u_E'(x_l)=v_l$, the non-physical solution (which explodes to $\pm \infty$ as $x\to \infty$) will have very small contributions at $x_m$ . 
+
+Furthermore, the exact values of $v_l$ and $v_r$ only scale the (non-normalised) solutions $u_E ^\uparrow, u_E^\downarrow$ for $(-\infty, x_m]$ and $[x_m, \infty)$ respectively. We know that for the correct values of $v_r$ and $v_l$, the physical solutions for the two halfs will become identical. Again, since this is a 2nd order ODE, this is equivalent to saying 
+
+$$
+u_E^\uparrow(x_m) = u_E^\downarrow(x_m) \\
+u_E'^\uparrow(x_m) = u_E'^\downarrow(x_m)
+$$
+
+But even without the correct ratio of $v_r, v_l$, what we _do_ have is :
+
+$$
+\exist\, C \in \mathbb{R} \;\text{ s.t.} \quad
+u_E^\uparrow(x_m) = C u_E^\downarrow(x_m) \quad
+\text{and} \quad u_E'^\uparrow(x_m) = C u_E'^\downarrow(x_m) \\\implies
+f(E) := u_E^\uparrow(x_m) u_E'^\downarrow(x_m) - u_E^\downarrow(x_m)u_E'^\uparrow(x_m) = 0
+$$
+
+Of course, for an $E$ that is not an eigen-energy, we will have $f(E)\ne 0$.
+As it turns out, this matching loss $f(E)$ is actually the Wronskian of the two solutions ($u_E^\uparrow, u_E^\downarrow$). This is exactly 0, only when the two solutions (after normalisation) are the same (save for a sign change). Moreover it is not dependent on the matching point (which is the mid-point $x_m$ in our case).
+
+This is the basis for the shooting method. 
+We choose extreme $x_l, x_r$ values (as per the spatial scale of the problem) and discretise the $[x_l, x_m]$ and $[x_m, x_r]$ segments. We set the boundary conditions for $x_l, x_r$ as described, with arbitrary, but small values of $v_l, v_r$ and solve the 2nd order ODE, for a given energy $E<0$ for the $[x_l, x_m]$ segment and $[x_m, x_r]$ segment individually (with the 2nd segment solved backwards from $x_r$ to $x_m$) to get the value of $u_E^\uparrow(x_m),u_E'^\downarrow(x_m),u_E^\downarrow(x_m),u_E'^\uparrow(x_m)$ and thus $f(E)$. Solving the 2nd order ODE can be done using any method, say RK2; but since the integration often passes through a region containing the "classical turning (inflection) point" and can be over-whelmed by (auto-regressive) noise due to numerical errors, an integrator with superior accuracy (such as Numerov's method) is preffered. 
+The goal is to verify whether $E$ is an eigen-energy by checking whether $f(E)\approx 0$.
+
+Although, we can zero-in on a particular eigen-energy using bisection methods in $\log_2(N_E)$ time were $N_E$ is the number of values of $E$ (regularly spaced) that we will test. I instead want to create plots for $f(E)$ itself. To do this, I will define:
+
+$$
+\vec u(x) = [u_{E_k}(x)]_k \\
+\vec v(x) = [u'_{E_k}(x)]_k \\
+\vec E = [E_k]_k
+$$
+
+and re-write the ATISE as :
+
+$$
+\frac{d}{dx} \vec v(x) = 2(V(x)-\vec E)* \vec u(x) = \vec{K(x)}*\vec u(x) = \vec a(x)\\
+\frac{d}{dx} \vec u(x) = v(x)
+$$
+
+Here, the "$*$" symbol represents point-wise multiplication. 
+
+Now, it's worth noting that since we cannot integrate over $r=0$ (since there is a singularity for $V_\text{eff}$), our interval $[r_l, r_r]$ must lie in the $r>0$ region entirely. This is different from the assumptions we made while developing the Shooting method. In particular, we assumed that $x_l, x_r$ are extreme values, for which the physical solution will have small value and derivative, while the non-physical solution will have values with large magnitudes. Here, though $r_l$ is not _extreme_, it still has the property we need, namely that the physical solution for $u(r)=rR(r)$ will have a small value (though $R(r)$ may not have small values) and the non-physical solution, which has the asymptotics of $r^{-l}$ will have a large values.
+
+### Results
+
+![Shooting method for Hydrogen's eletrostatic effective potential](media/P2/P2_normal_states_grid.png)
+
+In the right-side of the figure, you can see the plots for $f(E)$ for different values of $l$. Using these, the eigen-energies were identified.
+For these eigen-energies (and corresponding values of $l$), the eigen-states were computed by numerically solving the radial wave equation in $u(r)$. These are plotted to the left side in the figure. The corresponding energies are shown in the figure too. For each energy, the principal quantum number $n$ (in the subscript; e.g. $E_2$) was computed using this function :
+
+```python
+def E2n(E):return int(round((-2*E)**-0.5))
+```
+
+This is because the energy is given by $E_n = -\frac{1}{2n^2}$. The same can be verified from the numbers reported in the labels of the figure. The theoretical values are $E_1 = -0.5$, $E_2 = -0.125$, $E_3=-1/18=-0.05555{\large \bar 5}$
+
+You can also manually count the number of nodes for each eigenstate as the number of times that curve for $u(r)$ cuts the x-axis (except at $r=0$). As you can easily verify from the plots, this number is always exactly $n-l-1$. For example in the top-left subplot (for the $l=0$ case, i.e. s orbitals), when $n=1$ (blue curve), we have no points (other than $r=0$) where the curve crosses the x-axis. For $n=2$ (2s orbital, orange curve), it happens once, very roughly at $r\approx 2$. For $n=3$, it happens twice, first around 2 and then around 7. Similarly for the $l=1$ case, the $n=3$ curve (orange) cuts the x-axis $n-l-1 = 1$ times (around $r=6$) and the $n=2$ curve doesn't cut. Notice that there is no curve for $n=1$, since we don't have a physical solution for the resultant $E-V_\text{eff}$.
+
+You can also notice that the energies for the 3s ($E_3,\, l=0$),3p ($E_3,\, l=1$), and 3d ($E_3,\, l=2$) states are all the same ($-0.05\bar 5$). Similarly, those for 2s and 2p states are the same (-0.125). 
+Thus, there is a degeneracy in the energy levels, i.e. for the same eigen-energy, you can have multiple values of $l$. 
+
 ## Part (f): Degeneracy Breaking
+
+Since $E_n = -\frac{1}{2n^2}$, thus the different $V_\text{eff}$ functions for different $l$ values, all give us the same energy levels. This is something that only happens for the Coulumbic potential $V(r)=-Z/r$. To demonstrate this fact, we will use the generalised modified-effective-potential mentioned earlier and numerically solve for the eigen-energies using the shooting method for cases where $\mu\ne 0$ or $\lambda\ne 0$. The resultant plots for $f(E)$ and eigenstates are shown in the figure. To ensure each energy level can be mapped to an energy level for the unmodified case, but we can still notice loss in degeneracy, I have chosed $\mu=10^{-2}$ and $\lambda=10^{-5}$ for this analysis. 
+
+![Modified electrostatic potential](media/P2/P2_degeneracy_breaking_grid.png)
+
+For a more accurate analysis, the differences in the energy levels closest to 2s and 2p states (for the $l=0$ and $l=1$ case) were computed. These were the results :
+
+* Normal : $|E_{2s} - E_{2p}| \approx 3.14\times 10^{-7}$
+* $\lambda$ = 1e-05 :		$|E_{2s} - E_{2p}| \approx 1.18\times 10^{-4}$
+* $\mu$ = 0.01$ :		$|E_{2s} - E_{2p}| \approx 4.94\times 10^{-5}$
+
+As you can see, there is significantly more difference between the energy levels of these states when the potential is modified. This is even clearer when $n=3$ is considered (see figure for the energy values).
+The little bit of difference between the energy states fir the un-modified potential is due to small numerical errors and can be considered noise. 
 
 # Problem 3: 2D Quantum Scattering
 

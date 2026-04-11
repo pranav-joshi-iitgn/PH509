@@ -754,7 +754,7 @@ This is the basis for the shooting method.
 We choose extreme $x_l, x_r$ values (as per the spatial scale of the problem) and discretise the $[x_l, x_m]$ and $[x_m, x_r]$ segments. We set the boundary conditions for $x_l, x_r$ as described, with arbitrary, but small values of $v_l, v_r$ and solve the 2nd order ODE, for a given energy $E<0$ for the $[x_l, x_m]$ segment and $[x_m, x_r]$ segment individually (with the 2nd segment solved backwards from $x_r$ to $x_m$) to get the value of $u_E^\uparrow(x_m),u_E'^\downarrow(x_m),u_E^\downarrow(x_m),u_E'^\uparrow(x_m)$ and thus $f(E)$. Solving the 2nd order ODE can be done using any method, say RK2. 
 The goal is to verify whether $E$ is an eigen-energy by checking whether $f(E)\approx 0$.
 
-Although, we can zero-in on a particular eigen-energy using bisection methods in $\log_2(N_E)$ time were $N_E$ is the number of values of $E$ (regularly spaced) that we will test. I instead want to create plots for $f(E)$ or $\log_{10}|f(E)|$ itself. To do this, I will define:
+Although, we can zero-in on a particular eigen-energy using bisection methods in $\log_2(N_E)$ time were $N_E$ is the number of values of $E$ (regularly spaced) that we will test. I instead want to create plots for $f(E)$ itself. To do this, I will define:
 
 $$
 \vec u(x) = [u_{E_k}(x)]_k \\
