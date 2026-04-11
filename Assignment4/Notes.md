@@ -1,4 +1,5 @@
-# Chapter 8 : Time-Dependent Quantum Mechanics
+
+# Numerical Quantum Mechanics
 
 ## TDSE
 
@@ -656,8 +657,6 @@ Although this method gives analytically correct time evolution, the $O(N^3)$ bot
 Thus, this method isn't used professionally. 
 
 But, for the toy examples we have, I can certainly use it to verify correctness. 
-
-# Chapter 9 : Time Independent Quantum Mechanics
 
 ## Shooting method
 

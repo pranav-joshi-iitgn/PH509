@@ -9,7 +9,6 @@
   }
 </style>
 
-
 # Project 1: Time-dependent evolution of a Gaussian wavepacket in 1D
 
 ## Part (a): Numerical Method
@@ -19,7 +18,7 @@
 #### In physical units
 
 For a lot of systems, $V(x,t) = V(x)$. Using that, the hamiltonian operator operates entirely in the realm of position. 
-For these systems, we have $\psi_t = e^{-it\hat H/\hbar}\psi_0$ . This is again similar to what we got for classical Hamiltonian systems. The full derivation for this is attached in the `Notes.md` file.  
+For these systems, we have $\psi_t = e^{-it\hat H/\hbar}\psi_0$ . This is again similar to what we got for classical Hamiltonian systems. The full derivation for this is attached in [my Notes](Notes.html).  
 
 Take a look at this equation :
 
@@ -209,7 +208,7 @@ $$
 
 ## Part (b): Normalization and Free Evolution
 
-A gaussion packet with $\sigma=0.7$ centered at $x_0=-3$ was initialised and given the average initial momentum/wave-number of $k_0=2$. This was then evolved with a free potential. The evolution is visualised in the GIF animation shown. As you can see, the packet spreads in position-space as time passes, but doesn't spread in the wave-number/momentum domain. Here $\phi(k)$ is computed using FFT. The derivations and exact method can be found in `Notes.md`.  
+A gaussion packet with $\sigma=0.7$ centered at $x_0=-3$ was initialised and given the average initial momentum/wave-number of $k_0=2$. This was then evolved with a free potential. The evolution is visualised in the GIF animation shown. As you can see, the packet spreads in position-space as time passes, but doesn't spread in the wave-number/momentum domain. Here $\phi(k)$ is computed using FFT. The derivations and exact method can be found in [my Notes](Notes.html).  
 
 ![Free Potential Evolution of moving gaussian packet](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_B_Free_k0_2.gif)
 
@@ -218,7 +217,7 @@ You can see that the variation for both $N_x$ and $N_k$ is on the order of $10^{
 
 ![Free Potential Variation in normalisation](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_B_Free_k0_2_summary.png)
 
-It can in-fact be proven analytically that the SDLF method preserves the discreate analogues of the $N_x$ and $N_k$ values. For the derivation, see the section "Leap-Frog like finite difference method" in `Notes.md`.
+It can in-fact be proven analytically that the SDLF method preserves the discreate analogues of the $N_x$ and $N_k$ values. For the derivation, see the section "Leap-Frog like finite difference method" in [my Notes](Notes.html).
 
 ## Part (c): Harmonic Oscillator ($k_0 = 0$)
 
@@ -343,7 +342,7 @@ $$
 \int_{-\infty}^\infty R^2(r)r^2 dr =1
 $$
 
-We can, in fact solve for $Y$ entirely without knowing what $V$ is. The solution has basis functions of form $Y_{m,l}$ where $m,l$ are integers. These are called the the azimuthal quantum number and the angular momentum quantum number. This derivation is carried out in detail in `Notes.md`. But since we are only interested in the radial part, the only thing that we take from the results of that derivation is $L - l(l+1)$. 
+We can, in fact solve for $Y$ entirely without knowing what $V$ is. The solution has basis functions of form $Y_{m,l}$ where $m,l$ are integers. These are called the the azimuthal quantum number and the angular momentum quantum number. This derivation is carried out in detail in [my Notes](Notes.html). But since we are only interested in the radial part, the only thing that we take from the results of that derivation is $L - l(l+1)$. 
 
 Now, substituting $L = -l(l+1)$ back into the equation for $R$, we get :
 
