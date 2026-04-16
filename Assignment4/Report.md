@@ -233,12 +233,18 @@ $$
 
 A gaussion packet with $\sigma=0.7$ centered at $x_0=-3$ was initialised and given the average initial momentum/wave-number of $k_0=2$. This was then evolved with a free potential. The evolution is visualised in the GIF animation shown. As you can see, the packet spreads in position-space as time passes, but doesn't spread in the wave-number/momentum domain. Here $\phi(k)$ is computed using FFT. The derivations and exact method can be found in [my Notes](Notes.html).  
 
+<table><tr><td>
+
 ![Free Potential Evolution of moving gaussian packet](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_B_Free_k0_2.gif)
+
+</td><td>
+
+![Free Potential Variation in normalisation](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_B_Free_k0_2_summary.png)
+
+</td></tr></table>
 
 To verify that the normalisation actually happens, a plot of  $N_x(t) = \braket{\psi|\psi}$ is shown in the (static) figure, along with the normalisation $N_k$ in the momentum domain.
 You can see that the variation for both $N_x$ and $N_k$ is on the order of $10^{-7}$. 
-
-![Free Potential Variation in normalisation](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_B_Free_k0_2_summary.png)
 
 It can in-fact be proven analytically that the SDLF method preserves the discreate analogues of the $N_x$ and $N_k$ values. For the derivation, see the section "Leap-Frog like finite difference method" in [my Notes](Notes.html).
 
@@ -246,7 +252,6 @@ It can in-fact be proven analytically that the SDLF method preserves the discrea
 
 A gaussian packet with $\sigma=0.7$ was initialised at $x_0=-3$ and was given no average momentum, i.e. $k_0=0$. This was then evolved with the harmonic potential $V_0=\frac{1}{2}x^2$. You can see the periodic nature of the solution from the animation. Notice that here, the waveform in momentum space is also changing. This is because, unlike the free potential, with 0 classical force on the particle, here the classical force is $F(x) = -\frac{d}{dx}V = -2x$. You can also see vertical lines for 
 
-![Animated oscilations of wave-packet in harmonic potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_C_Harmonic_k0_0.gif)
 
 1. The most probable position $x_p(t)$ where $|\psi(x,t)|^2$ is highest
 2. The mean position $\braket{x}(t)$, interpreting $|\psi|^2(x,t)$ as the probability density function. 
@@ -254,15 +259,31 @@ A gaussian packet with $\sigma=0.7$ was initialised at $x_0=-3$ and was given no
 
 The same 3 quantities are also plotted as a function of time in a subplot of the static figure.
 
+<table><tr><td>
+
+![Animated oscilations of wave-packet in harmonic potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_C_Harmonic_k0_0.gif)
+
+</td><td>
+
 ![Comparison of $\braket{x}$ with classical $x_c$](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_C_Harmonic_k0_0_summary.png)
+
+</td></tr></table>
+
 
 ## Part (d): Harmonic Oscillator ($k_0 = 2$)
 
 Now, the wave-packet is given an initial momentum of $k_0=2$ rather than 0. This allows it to reach further to the right, as evident from the static plot for $\braket{x}$; similar to how $x_c$ goes further to the right than before. 
 You will also notice that the average energy, namely $\braket{H}(t)$ is higher (see static figure) than what it was in the case when initial momentum was 0
 
+<table><tr><td>
+
 ![Animated oscilations of wave-packet in harmonic potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_D_Harmonic_k0_2.gif)
+
+</td><td>
+
 ![Comparison of $\braket{x}$ with classical $x_c$](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_D_Harmonic_k0_2_summary.png)
+
+</td></tr></table>
 
 ## Part (e): Numerical Stability and Accuracy
 
@@ -288,9 +309,15 @@ Before the particle gets close to the boundary, it has constant acceleration and
 Another thing to note is that the average momentum also changes linearly, similar to the the classical solution.
 The wave-packet also spreads in position with time (see GIF animation), similar to what we saw in the case for the free particle. 
 
+<table><tr><td>
+
 ![Animation showing boundary effects and spreading for linear potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_F_Linear_k0_0.gif)
 
+</td><td>
+
 ![Curves for $x_c(t)$ and $\braket{x}(t)$](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P1/Part_F_Linear_k0_0_summary.png)
+
+</td></tr></table>
 
 # Project 2: Radial Schrodinger equation for the hydrogen atom
 
@@ -685,9 +712,15 @@ As suggested in the assignment, the wave-packet will be centered at $(-8,0)$ and
 
 ## Part (b): Free Propagation
 
+<table><tr><td>
+
 ![Free Particle](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_0.gif)
 
+</td><td>
+
 ![Checking normalisation preservation](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d_summary__R_3__k_x_2__sigma_1__V_0_0.png)
+
+</td></tr></table>
 
 Once again, as you can see, towards the end of the simulation, the momentum in $x$ directon starts to change (invert, more specifically). This is due to the reflection of the wave-packet by the right boundary of the grid.
 
@@ -695,9 +728,15 @@ Also notice how the norm $\braket{\psi|\psi}$ stays close to 1, with variation b
 
 ## Part (c) and (f): Repulsive Barrier and classical shadow region
 
+<table><tr><td>
+
 ![Repulsive Barrier](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
 
+</td><td>
+
 ![Changes in momentum and position](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d_summary__R_3__k_x_2__sigma_1__V_0_1.png)
+
+</td></tr></table>
 
 You can see in the animation that after the wave-packet encounters the repulsive disk potential, there is a wavefront (a little after the first thin reflection) travelling to the left. This is the reflected wave. 
 Notice that there is some of the incident probability mass that actually goes inside and beyond the disk, i.e. in the region where $x>R=3$ and $y\in [-R/2,R/2] = [-1.5, 1.5]$. This is the classical "shadow region". No classical particle with momentum purely along x-axis would ever be able to reach the shadow region. And of course, classically, no particle will be able to enter the disk. But here we see that a _quantum_ particle/wave (or something close to a particle) is able to enter the disk and go beyond it into the shadow region. In wave-mechanics terms, this is the transmitted wave, and is a very standard phenomenon to see. 
@@ -718,8 +757,6 @@ So, I have made a few modifications :
 1. I consider wide sectors (centered at given $\theta_m$) with angular width of $\Delta \theta = 10^o = \frac{\pi}{18}$ which are then further cropped so that $r\in [r_m-\Delta r, r_m + \Delta r]$ where $\Delta r$ is a large value. I then compute the area integral of $|\psi|^2$ over these regions giving $P(\theta_m|r_m, \Delta r, \Delta \theta)$ 
 2. To make sure a good amount of the probability mass is captured, I have kept $r_m=13$ and $\Delta r = 7$ (in atomic units). 
 
-
-
 For this section, refer back to the animation in part (c). 
 These $r_m-\Delta r$ and $r_m + \Delta r$ values are highlighted as white concentric circles in the first subplot of the animation.
 The resultant values of $P(\theta_m)$ are plotted on the radial plot in bottom right subplot of the animation, with a square root taken to somewhat compress the dynamic range and help in visualisation. 
@@ -728,33 +765,57 @@ The resultant values of $P(\theta_m)$ are plotted on the radial plot in bottom r
 
 ### $R=1$
 
+<table><tr><td>
+
 ![$R=1, \sigma=1, k_x=2$ animation](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
 
+</td><td>
+
 ![$R=1, \sigma=1, k_x=2$ plots](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d_summary__R_1__k_x_2__sigma_1__V_0_1.png)
+
+</td></tr></table>
 
 With a smaller $R$, less of the probability mass is directly reflected back, and surprisingly, less probability mass is directly transmitted. Rather, it seems that wave is converted into 2 waves going travelling diagonally to the right, which then interfere when they spread. The shape of the $P(\theta)$ plot after the encounter with the disk is also different, with the central peak we previously saw missing. 
 
 ### $R=0.3$
 
+<table><tr><td>
+
 ![$R=0.3, \sigma=1, k_x=2$ animation](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
 
+</td><td>
+
 ![$R=0.3, \sigma=1, k_x=2$ plots](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d_summary__R_0.3__k_x_2__sigma_1__V_0_1.png)
+
+</td></tr></table>
 
 With an even smaller $R$, the shape of $P(\theta)$ after the encounter with the disk entirely changes to a more circular shape. Moreover, there is little to no change in the momentum wave-function before and after the encounter. Most likely the two diagonally travelling wavefronts we saw in the $R=1$ case are spreading more rapidly and interfering earlier in the shadow region. Thus, the probability mass in the shadow region isn't due to the transmitted wave, but rather interference of the deflected wavefronts.
 
 ### $k_x=5$
 
+<table><tr><td>
+
 ![$R=3, \sigma=1, k_x=5$ animation](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
 
+</td><td>
+
 ![$R=3, \sigma=1, k_x=5$ plots](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d_summary__R_3__k_x_5__sigma_1__V_0_1.png)
+
+</td></tr></table>
 
 The interesting thing to notice is that when $k_x=5$, the particle entirely bypasses the repulsive disk. It is effectively going _over_ the disk, because it has a _much_ higher energy (around 13) than the potential of the disk (just 1). 
 
 ## Part (f): Attractive Potential
 
+<table><tr><td>
+
 ![Attractive potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
 
+</td><td>
+
 ![Position and Momentum for attractive disk potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d_summary__R_3__k_x_2__sigma_1__V_0_-1.png)
+
+</td></tr></table>
 
 Unlike the repulsive potential where most of the probability mass is reflected back, for an attractive potential, most is transmitted through, although there is some that is reflected back. 
 Similar to the decrease in momentum we saw when the particle entered the region with higher potential, here we see an _increase_ in the average momentum. 
@@ -766,7 +827,7 @@ Just like last time, at the end of the simulation, we start seeing the effect of
 
 From the figure, we can gather than even after increaseing $\Delta t$ to 0.1 and increasing $\Delta x$ to 0.2, the numerical solution is accurate. 
 
-Only when we increase $\Delta$ to 0.5 do we start getting inaccuracies. Even then, the general shape of the solution is the same. 
+Only when we increase $\Delta x$ to 0.5 do we start getting inaccuracies. Even then, the general shape of the solution is the same. 
 
 ## Extra
 
@@ -777,15 +838,15 @@ Though the disk potential gives us good intuition about how the wave-packet inte
 <table><tr>
 <td>
 
-![Disk potential](media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
+![Disk potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
 </td>
 <td>
 
-![Moon potential](media/moon/moon_scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
+![Moon potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/moon/moon_scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
 </td>
 <td>
 
-![Wall potential](media/wall/wall_scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
+![Wall potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/wall/wall_scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
 </td>
 </tr><table>
 
@@ -794,15 +855,15 @@ Though the disk potential gives us good intuition about how the wave-packet inte
 <table><tr>
 <td>
 
-![Disk potential](media/P3/scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
+![Disk potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
 </td>
 <td>
 
-![Moon potential](media/moon/moon_scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
+![Moon potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/moon/moon_scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
 </td>
 <td>
 
-![Wall potential](media/wall/wall_scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
+![Wall potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/wall/wall_scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
 </td>
 </tr><table>
 
@@ -811,15 +872,15 @@ Though the disk potential gives us good intuition about how the wave-packet inte
 <table><tr>
 <td>
 
-![Disk potential](media/P3/scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
+![Disk potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
 </td>
 <td>
 
-![Moon potential](media/moon/moon_scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
+![Moon potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/moon/moon_scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
 </td>
 <td>
 
-![Wall potential](media/wall/wall_scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
+![Wall potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/wall/wall_scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
 </td>
 </tr><table>
 
@@ -829,15 +890,15 @@ Though the disk potential gives us good intuition about how the wave-packet inte
 <table><tr>
 <td>
 
-![Disk potential](media/P3/scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
+![Disk potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
 </td>
 <td>
 
-![Moon potential](media/moon/moon_scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
+![Moon potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/moon/moon_scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
 </td>
 <td>
 
-![Wall potential](media/wall/wall_scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
+![Wall potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/wall/wall_scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
 </td>
 </tr><table>
 
@@ -847,15 +908,15 @@ Though the disk potential gives us good intuition about how the wave-packet inte
 <table><tr>
 <td>
 
-![Disk potential](media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
+![Disk potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
 </td>
 <td>
 
-![Moon potential](media/moon/moon_scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
+![Moon potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/moon/moon_scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
 </td>
 <td>
 
-![Wall potential](media/wall/wall_scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
+![Wall potential](https://raw.githubusercontent.com/pranav-joshi-iitgn/PH509/refs/heads/main/Assignment4/media/wall/wall_scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
 </td>
 </tr><table>
 
