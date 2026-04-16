@@ -1,51 +1,5 @@
 # Planetary Motion
 
-### Python2 (?) code for basic earth-sun simulation
-
-```python
-import ode,numpy as np
-import visual as vp
-
-def earth(id, r, v, t):
-    global GM
-    if id==0 : return v
-    s = vp.mag(r) # magnitude
-    return - GM*r/s**3
-
-def go():
-    r = np.array([1.017, 0.0])
-    v = np.array([0.0,6.179]) 
-    scene = vp.display(
-        title="Planetary motion",
-        background=(0.2,0.5,1),
-        forward =(0.2,-1),
-        planet = vp.sphere(
-            pos=r, radius=0.1, 
-            make_trail=True, 
-            material =vp.materials.earth, 
-            up=(0,0,1)
-            ),
-        sun = vp.sphere(
-            pos=(0,0),
-            radius = 0.2,
-            color=vp.color.yellow,
-            material = vp.materials.emissive
-            ),
-        sunlight = vp.local_light(pos=(0,0),color=vp.color.yellow)
-    )
-    t = 0.0
-    h = 0.001
-    while True:
-        vp.rate(200)
-        r,v = ode.leapdrog(earth, r, v, t, h)
-        planet.pos = r
-        if (scene.kb.keys): 
-            scene.kb.getkey(),scene.kb.getkey()
-
-GM = 4* (np.pi**2)
-go()
-```
-
 ### Terminology
 
 - Aphelion : Position of Earth farthest from Sun
@@ -54,7 +8,6 @@ go()
 - 1 year = $3.156 \times 10^7$ s
 - 1 AU/year = 4740 m/s
 - For the sun, $GM = 4\pi^2 \text{AU}^3\text{year}^{-2}$
-
 
 ### Reduction to one body problem
 
@@ -484,9 +437,3 @@ $$
 Then, we just need to set these as the initial conditions for our numerical integrator. 
 
 But using the Kepler's equation is exact; so we will do that. 
-
-### Book
-
-- "Computational Physics" by Giordano, Naganishi
-- Show that Rung Lenz is constant both computationally and analytically. 
-- Show that Rung Lenz vector is related to $SO(4)$
