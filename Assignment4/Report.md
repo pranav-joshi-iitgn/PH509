@@ -9,6 +9,29 @@
   }
 </style>
 
+# Introduction
+
+These were the last three mini-projects or problems assigned to me in the later half of the PH-509 course. 
+
+## Contents
+
+* The first project is about solving the 1D TDSE using numerical methods. 
+* The second project deals with methods to get the energy levels for the hydrogen atom and other radial potentials. 
+* The third project is about solving the TDSE in 2D to study quantum scattering
+
+## Hardest Problem and Thanks
+
+While the 3rd problem seemed particularly hard numerically, for me that wasn't the one that was the hardest. 
+
+Instead, it was the 2nd problem. The book had barely any information on _why_ the Shooting method works. It was similar to the issue I faced while reading the Time-Transformed Leap-Frog section for planetary motion. I had to do my own digging and actually understand the mathematical reasons. I discovered about concepts like the classical turning/inflection point and did a lot of my own analysis on the nature of the physical and non-physical solutions of the TISE. I admit that I had to turn a blind eye to many nuances such as deriving the asymptotics for the basis of solutions and analysing numerical stability close to the turning point. 
+I had to more or less rely on what the internet (further filtered through tools like AI agents) had to readily provide. 
+
+I also got the opportunity to derive the solutions for the hydrogen atom, and so this problem was the most conceptually rewarding to me as I had never done that before, even in the Quantum Statistical Mechanics section of the PH 507 course at IITGN. I got to learn many deeply hidden things, such as the $\ket{m}$ solution (to the azimuthal part of the TISE) referring to different things in Physics (the $e^{\pm im\beta}$ basis) and Chemistry ($\sin(m\beta)$ and $\cos(m\beta)$ basis).
+
+I also found myself finding similarities between the problems I faced here (e.g., the spatial step size being too large near specific points) and during the mini-projects on planetary motion (e.g., requiring adaptive stepping for small $r$ values for Mercury's motion).
+
+While my approach can be described as re-inventing the wheel, this is the deepest I've ever dug into quantum mechanics, and it's all thanks to this course that offered me the opportunity to re-_live_ inventing the wheel (or solutions to TISE for Hydrogen atom in my case).
+
 # Project 1: Time-dependent evolution of a Gaussian wavepacket in 1D
 
 ## Part (a): Numerical Method
@@ -744,3 +767,96 @@ Just like last time, at the end of the simulation, we start seeing the effect of
 From the figure, we can gather than even after increaseing $\Delta t$ to 0.1 and increasing $\Delta x$ to 0.2, the numerical solution is accurate. 
 
 Only when we increase $\Delta$ to 0.5 do we start getting inaccuracies. Even then, the general shape of the solution is the same. 
+
+## Extra
+
+Though the disk potential gives us good intuition about how the wave-packet interacts with a barrier, to further our understading, we can also look at some other potentials. In particular, a moon-shaped potential and a wall/vertical strip. The diameter and width (respectively) of these potentials will be $2R$ where $R$ is a parameter for the potential. 
+
+### $R=3, k_x=2, \sigma=1$
+
+<table><tr>
+<td>
+
+![Disk potential](media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
+</td>
+<td>
+
+![Moon potential](media/moon/moon_scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
+</td>
+<td>
+
+![Wall potential](media/wall/wall_scatterer_2d__R_3__k_x_2__sigma_1__V_0_1.gif)
+</td>
+</tr><table>
+
+### $R=1, k_x=2, \sigma=1$
+
+<table><tr>
+<td>
+
+![Disk potential](media/P3/scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
+</td>
+<td>
+
+![Moon potential](media/moon/moon_scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
+</td>
+<td>
+
+![Wall potential](media/wall/wall_scatterer_2d__R_1__k_x_2__sigma_1__V_0_1.gif)
+</td>
+</tr><table>
+
+### $R=0.3, k_x=2, \sigma=1$
+
+<table><tr>
+<td>
+
+![Disk potential](media/P3/scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
+</td>
+<td>
+
+![Moon potential](media/moon/moon_scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
+</td>
+<td>
+
+![Wall potential](media/wall/wall_scatterer_2d__R_0.3__k_x_2__sigma_1__V_0_1.gif)
+</td>
+</tr><table>
+
+
+### $R=3, k_x=5, \sigma=1$
+
+<table><tr>
+<td>
+
+![Disk potential](media/P3/scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
+</td>
+<td>
+
+![Moon potential](media/moon/moon_scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
+</td>
+<td>
+
+![Wall potential](media/wall/wall_scatterer_2d__R_3__k_x_5__sigma_1__V_0_1.gif)
+</td>
+</tr><table>
+
+
+### $R=3, k_x=2, \sigma=1, V_0=-1$
+
+<table><tr>
+<td>
+
+![Disk potential](media/P3/scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
+</td>
+<td>
+
+![Moon potential](media/moon/moon_scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
+</td>
+<td>
+
+![Wall potential](media/wall/wall_scatterer_2d__R_3__k_x_2__sigma_1__V_0_-1.gif)
+</td>
+</tr><table>
+
+

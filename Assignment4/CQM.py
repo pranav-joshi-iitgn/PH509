@@ -664,6 +664,14 @@ def disk_potential_2d(X, Y, R=1.5, center_x=0.0, center_y=0.0, v_out=0.0, v_in=1
     epsilon = 1e-10
     return np.where(((X-center_x)**2 + (Y-center_y)**2) < R**2 + epsilon, v_in, v_out)
 
+def moon_potential_2d(X, Y, R=1.5, center_x=0, center_y=0, center_x_2=-1.5, center_y_2=0, r=0.5, v_out=0, v_in=1):
+    epsilon = 1e-10
+    mask = (((X-center_x)**2 + (Y-center_y)**2) < R**2 + epsilon) & (((X-center_x_2)**2 + (Y-center_y_2)**2) >= r**2 + epsilon)
+    return np.where(mask, v_in, v_out)
+
+def wall_potential_2d(X, Y, width=1, v_out=0, v_in=1):
+    return np.where(np.abs(X) < width, v_in, v_out)
+
 def harmonic_potential_2d(X, Y, omega_x=1.0, omega_y=1.0):
     """Returns a 2D harmonic oscillator potential."""
     return 0.5 * (omega_x**2 * X**2 + omega_y**2 * Y**2)
@@ -1169,6 +1177,13 @@ def MiniProject3():
         def disk(X,Y):
             return disk_potential_2d(X,Y, params['R'], v_in=params['V_0'])
 
+        def moon(X,Y):
+            return moon_potential_2d(X,Y, params['R'], v_in=params['V_0'], center_x_2 = -params['R'], r=params['R']/2)
+
+        def wall(X,Y):
+            return wall_potential_2d(X, Y, params['R'], v_in=params['V_0'])
+
+
         print("Initializing 2D Simulation...")
         res = simulate_2D(
             V_func=disk,
@@ -1199,6 +1214,7 @@ def MiniProject3():
         print(f"Saved static plot as '{stat_file}'")
 
     plt.close('all')
+    
     fig_static, axes = plt.subplots(4, 2, figsize=(8, 12), sharex=True)
     plt.delaxes(axes[3][1])
 
@@ -1241,5 +1257,5 @@ def MiniProject3():
 
 if __name__ == "__main__": 
     print("-"*15 + "   starting simulations   " + "-"*15)
-    MiniProject1()
+    MiniProject3()
     print("-"*15 + " all simulations finished " + "-"*15)
